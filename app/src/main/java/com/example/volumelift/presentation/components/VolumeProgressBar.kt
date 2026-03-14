@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.volumelift.domain.model.MuscleVolume
 import com.example.volumelift.presentation.theme.VolumeOnTarget
@@ -30,58 +31,76 @@ fun VolumeProgressBar(
     modifier: Modifier = Modifier,
     useKg: Boolean = true
 ) {
-    val progress = (muscleVolume.progressPercent / 100f).coerceIn(0f, 1.5f)
-    val displayProgress = (progress).coerceAtMost(1f)
-    val color = when {
-        muscleVolume.progressPercent >= 110f -> VolumeOver
-        muscleVolume.progressPercent >= 85f -> VolumeOnTarget
+    // Sets-based progress (primary metric)
+    val setsProgress = (muscleVolume.setsProgressPercent / 100f).coerceAtMost(1f)
+    val setsColor = when {
+        muscleVolume.setsProgressPercent >= 110f -> VolumeOver
+        muscleVolume.setsProgressPercent >= 85f -> VolumeOnTarget
         else -> VolumeUnder
     }
-    val unit = if (useKg) "kg" else "lbs"
-    val changeText = if (muscleVolume.previousWeekVolume > 0) {
-        val change = muscleVolume.weekOverWeekChange
+
+    val setsChangeText = if (muscleVolume.previousWeekSets > 0) {
+        val change = muscleVolume.setsWeekOverWeekChange
         if (change >= 0) "↑${String.format("%.0f", change)}%" else "↓${String.format("%.0f", -change)}%"
     } else ""
 
-    Column(modifier = modifier.padding(vertical = 4.dp)) {
+    val unit = if (useKg) "kg" else "lbs"
+
+    Column(modifier = modifier.padding(vertical = 6.dp)) {
+        // Muscle name + sets count (primary)
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = muscleVolume.muscleGroup.name,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
                 modifier = Modifier.weight(1f)
             )
             Text(
-                text = "${String.format("%.0f", muscleVolume.currentVolume)} / ${String.format("%.0f", muscleVolume.targetVolume)} $unit",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                text = "${muscleVolume.currentSets} / ${muscleVolume.targetSets} sets",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = setsColor
             )
-            if (changeText.isNotEmpty()) {
+            if (setsChangeText.isNotEmpty()) {
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = changeText,
+                    text = setsChangeText,
                     style = MaterialTheme.typography.labelSmall,
-                    color = if (muscleVolume.weekOverWeekChange >= 0) VolumeOnTarget else VolumeOver
+                    color = if (muscleVolume.setsWeekOverWeekChange >= 0) VolumeOnTarget else VolumeOver
                 )
             }
         }
+
         Spacer(modifier = Modifier.height(4.dp))
+
+        // Sets progress bar
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(8.dp)
-                .clip(RoundedCornerShape(4.dp))
+                .height(10.dp)
+                .clip(RoundedCornerShape(5.dp))
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .fillMaxWidth(displayProgress)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(color)
+                    .fillMaxWidth(setsProgress)
+                    .clip(RoundedCornerShape(5.dp))
+                    .background(setsColor)
                     .animateContentSize()
+            )
+        }
+
+        // Volume (secondary metric, smaller text)
+        if (muscleVolume.currentVolume > 0) {
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = "${String.format("%.0f", muscleVolume.currentVolume)} $unit volume",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

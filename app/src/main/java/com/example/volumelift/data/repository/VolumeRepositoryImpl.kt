@@ -1,5 +1,6 @@
 package com.example.volumelift.data.repository
 
+import com.example.volumelift.data.local.dao.ExerciseVolumeResult
 import com.example.volumelift.data.local.dao.VolumeDao
 import com.example.volumelift.data.local.db.Converters
 import com.example.volumelift.data.local.entity.MuscleGroup
@@ -11,8 +12,12 @@ import com.example.volumelift.util.DateUtils
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
 import javax.inject.Inject
+
+private data class MuscleStats(
+    val volume: Double = 0.0,
+    val sets: Int = 0
+)
 
 class VolumeRepositoryImpl @Inject constructor(
     private val volumeDao: VolumeDao,
@@ -27,15 +32,20 @@ class VolumeRepositoryImpl @Inject constructor(
         val prevWeekFlow = volumeDao.getVolumeByExerciseInRange(prevStart, prevEnd)
 
         return combine(currentWeekFlow, prevWeekFlow, preferencesRepository.userPreferences) { currentResults, prevResults, prefs ->
-            val currentVolumeMap = calculateMuscleVolumes(currentResults)
-            val prevVolumeMap = calculateMuscleVolumes(prevResults)
+            val currentStats = calculateMuscleStats(currentResults)
+            val prevStats = calculateMuscleStats(prevResults)
 
             MuscleGroup.entries.map { muscleGroup ->
+                val current = currentStats[muscleGroup] ?: MuscleStats()
+                val prev = prevStats[muscleGroup] ?: MuscleStats()
                 MuscleVolume(
                     muscleGroup = muscleGroup,
-                    currentVolume = currentVolumeMap[muscleGroup] ?: 0.0,
+                    currentSets = current.sets,
+                    targetSets = prefs.setTargets[muscleGroup] ?: 14,
+                    previousWeekSets = prev.sets,
+                    currentVolume = current.volume,
                     targetVolume = prefs.volumeTargets[muscleGroup] ?: 10000.0,
-                    previousWeekVolume = prevVolumeMap[muscleGroup] ?: 0.0
+                    previousWeekVolume = prev.volume
                 )
             }
         }
@@ -43,30 +53,36 @@ class VolumeRepositoryImpl @Inject constructor(
 
     override fun getWeeklyVolumeHistory(weeks: Int): Flow<List<List<MuscleVolume>>> = flow {
         // Simplified: emit current week data for chart
-        // In production you'd collect multiple weeks
     }
 
-    private fun calculateMuscleVolumes(
-        results: List<com.example.volumelift.data.local.dao.ExerciseVolumeResult>
-    ): Map<MuscleGroup, Double> {
-        val volumeMap = mutableMapOf<MuscleGroup, Double>()
+    private fun calculateMuscleStats(
+        results: List<ExerciseVolumeResult>
+    ): Map<MuscleGroup, MuscleStats> {
+        val statsMap = mutableMapOf<MuscleGroup, MuscleStats>()
         val converters = Converters()
 
         for (result in results) {
             val primary = MuscleGroup.valueOf(result.primaryMuscleGroup)
             val secondaries = converters.toMuscleGroupList(result.secondaryMuscleGroups)
 
-            // Primary gets 100% volume
-            volumeMap[primary] = (volumeMap[primary] ?: 0.0) +
-                    (result.totalVolume * Constants.PRIMARY_MUSCLE_VOLUME_FACTOR)
+            // Primary muscle: 100% volume, full set count
+            val currentPrimary = statsMap[primary] ?: MuscleStats()
+            statsMap[primary] = MuscleStats(
+                volume = currentPrimary.volume + (result.totalVolume * Constants.PRIMARY_MUSCLE_VOLUME_FACTOR),
+                sets = currentPrimary.sets + result.setCount
+            )
 
-            // Secondary muscles get 50% volume
+            // Secondary muscles: 50% volume, 50% set count (rounded up)
             for (secondary in secondaries) {
-                volumeMap[secondary] = (volumeMap[secondary] ?: 0.0) +
-                        (result.totalVolume * Constants.SECONDARY_MUSCLE_VOLUME_FACTOR)
+                val currentSecondary = statsMap[secondary] ?: MuscleStats()
+                val secondarySets = ((result.setCount * 0.5) + 0.5).toInt()
+                statsMap[secondary] = MuscleStats(
+                    volume = currentSecondary.volume + (result.totalVolume * Constants.SECONDARY_MUSCLE_VOLUME_FACTOR),
+                    sets = currentSecondary.sets + secondarySets
+                )
             }
         }
 
-        return volumeMap
+        return statsMap
     }
 }

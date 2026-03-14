@@ -8,7 +8,8 @@ data class ExerciseVolumeResult(
     val exerciseId: Long,
     val primaryMuscleGroup: String,
     val secondaryMuscleGroups: String,
-    val totalVolume: Double
+    val totalVolume: Double,
+    val setCount: Int
 )
 
 @Dao
@@ -18,7 +19,8 @@ interface VolumeDao {
             e.id as exerciseId,
             e.primaryMuscleGroup,
             e.secondaryMuscleGroups,
-            SUM(sl.weight * sl.reps) as totalVolume
+            SUM(sl.weight * sl.reps) as totalVolume,
+            COUNT(sl.id) as setCount
         FROM set_logs sl
         INNER JOIN exercise_logs el ON sl.exerciseLogId = el.id
         INNER JOIN workout_sessions ws ON el.sessionId = ws.id
