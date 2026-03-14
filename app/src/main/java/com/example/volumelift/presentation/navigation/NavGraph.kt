@@ -38,6 +38,9 @@ fun NavGraph(navController: NavHostController, modifier: Modifier = Modifier) {
                 },
                 onNavigateToHistory = {
                     navController.navigate(Screen.History.route)
+                },
+                onNavigateToWorkoutDetail = { sessionId ->
+                    navController.navigate(Screen.WorkoutDetail.createRoute(sessionId))
                 }
             )
         }

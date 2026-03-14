@@ -68,6 +68,7 @@ fun HomeScreen(
     onNavigateToWorkout: (Long) -> Unit,
     onNavigateToTemplates: () -> Unit,
     onNavigateToHistory: () -> Unit,
+    onNavigateToWorkoutDetail: (Long) -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -195,6 +196,7 @@ fun HomeScreen(
                         items(state.recentWorkouts) { session ->
                             RecentWorkoutCard(
                                 session = session,
+                                onClick = { onNavigateToWorkoutDetail(session.id) },
                                 modifier = Modifier.padding(horizontal = 16.dp)
                             )
                         }
@@ -437,9 +439,9 @@ fun TemplateCard(template: WorkoutTemplate, onClick: () -> Unit) {
 }
 
 @Composable
-fun RecentWorkoutCard(session: WorkoutSession, modifier: Modifier = Modifier) {
+fun RecentWorkoutCard(session: WorkoutSession, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
