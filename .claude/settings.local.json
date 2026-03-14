@@ -6,7 +6,8 @@
       "WebSearch",
       "Bash(./gradlew assembleDebug 2>&1 | tail -120)",
       "Bash(./gradlew assembleDebug 2>&1 | tail -30)",
-      "Bash(./gradlew assembleDebug 2>&1 | tail -20)"
+      "Bash(./gradlew assembleDebug 2>&1 | tail -20)",
+      "Bash(./gradlew assembleDebug 2>&1 | tail -15)"
     ]
   }
 }

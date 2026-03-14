@@ -3,7 +3,6 @@ package com.example.volumelift.presentation.workout
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.volumelift.data.local.entity.SetType
 import com.example.volumelift.domain.model.ExerciseLogWithSets
 import com.example.volumelift.domain.model.WorkoutSession
 import com.example.volumelift.domain.model.WorkoutSet
@@ -12,6 +11,7 @@ import com.example.volumelift.domain.repository.WorkoutRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -45,6 +45,7 @@ class ActiveWorkoutViewModel @Inject constructor(
 
     private var timerJob: Job? = null
     private var restTimerJob: Job? = null
+    private var defaultRestTimer: Int = 90
 
     init {
         loadSession()
@@ -55,27 +56,28 @@ class ActiveWorkoutViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val prefs = preferencesRepository.getUserPreferences()
-                workoutRepository.getExerciseLogsForSession(sessionId).collect { logs ->
-                    val session = workoutRepository.getSessionById(sessionId)
-                    if (session != null) {
-                        val current = _uiState.value
-                        val elapsed = if (current is ActiveWorkoutUiState.Success) current.elapsedTime else "00:00"
-                        val restTimer = if (current is ActiveWorkoutUiState.Success) current.restTimerSeconds else 0
-                        val isRunning = if (current is ActiveWorkoutUiState.Success) current.isRestTimerRunning else false
-                        _uiState.value = ActiveWorkoutUiState.Success(
-                            session = session,
-                            exerciseLogs = logs,
-                            elapsedTime = elapsed,
-                            restTimerSeconds = restTimer,
-                            isRestTimerRunning = isRunning,
-                            defaultRestTimer = prefs.defaultRestTimerSeconds
-                        )
-                    }
-                }
+                defaultRestTimer = prefs.defaultRestTimerSeconds
+                refreshData()
             } catch (e: Exception) {
                 _uiState.value = ActiveWorkoutUiState.Error(e.message ?: "Unknown error")
             }
         }
+    }
+
+    private suspend fun refreshData() {
+        val fullSession = workoutRepository.getFullSession(sessionId) ?: return
+        val current = _uiState.value
+        val elapsed = if (current is ActiveWorkoutUiState.Success) current.elapsedTime else "00:00"
+        val restTimer = if (current is ActiveWorkoutUiState.Success) current.restTimerSeconds else 0
+        val isRunning = if (current is ActiveWorkoutUiState.Success) current.isRestTimerRunning else false
+        _uiState.value = ActiveWorkoutUiState.Success(
+            session = fullSession,
+            exerciseLogs = fullSession.exerciseLogs,
+            elapsedTime = elapsed,
+            restTimerSeconds = restTimer,
+            isRestTimerRunning = isRunning,
+            defaultRestTimer = defaultRestTimer
+        )
     }
 
     private fun startTimer() {
@@ -130,12 +132,14 @@ class ActiveWorkoutViewModel @Inject constructor(
     fun addExercise(exerciseId: Long) {
         viewModelScope.launch {
             workoutRepository.addExerciseToSession(sessionId, exerciseId)
+            refreshData()
         }
     }
 
     fun removeExercise(exerciseLogId: Long) {
         viewModelScope.launch {
             workoutRepository.removeExerciseFromSession(exerciseLogId)
+            refreshData()
         }
     }
 
@@ -152,9 +156,10 @@ class ActiveWorkoutViewModel @Inject constructor(
                         setNumber = nextSetNumber,
                         weight = lastSet?.weight ?: 0.0,
                         reps = lastSet?.reps ?: 0,
-                        restTimerSeconds = current.defaultRestTimer
+                        restTimerSeconds = defaultRestTimer
                     )
                 )
+                refreshData()
             }
         }
     }
@@ -162,12 +167,14 @@ class ActiveWorkoutViewModel @Inject constructor(
     fun updateSet(set: WorkoutSet) {
         viewModelScope.launch {
             workoutRepository.updateSet(set)
+            refreshData()
         }
     }
 
     fun completeSet(set: WorkoutSet) {
         viewModelScope.launch {
             workoutRepository.updateSet(set.copy(isCompleted = true))
+            refreshData()
             val current = _uiState.value
             if (current is ActiveWorkoutUiState.Success) {
                 startRestTimer(set.restTimerSeconds)
@@ -178,6 +185,7 @@ class ActiveWorkoutViewModel @Inject constructor(
     fun deleteSet(setId: Long) {
         viewModelScope.launch {
             workoutRepository.deleteSet(setId)
+            refreshData()
         }
     }
 
