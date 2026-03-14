@@ -1,7 +1,9 @@
 package com.example.volumelift.presentation.workout
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -10,12 +12,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.rounded.FitnessCenter
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -25,12 +32,16 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -53,12 +64,17 @@ fun ExercisePickerScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Add Exercise") },
+                title = {
+                    Text("Add Exercise", fontWeight = FontWeight.Bold)
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             )
         }
     ) { paddingValues ->
@@ -67,7 +83,6 @@ fun ExercisePickerScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Search
             SearchBar(
                 query = searchQuery,
                 onQueryChange = {
@@ -85,7 +100,6 @@ fun ExercisePickerScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Muscle group filter chips
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -97,7 +111,7 @@ fun ExercisePickerScreen(
                             selectedMuscleGroup = null
                             viewModel.filterByMuscleGroup(null)
                         },
-                        label = { Text("All") }
+                        label = { Text("All", fontWeight = FontWeight.Medium) }
                     )
                 }
                 items(MuscleGroup.entries.toTypedArray()) { muscleGroup ->
@@ -107,7 +121,7 @@ fun ExercisePickerScreen(
                             selectedMuscleGroup = muscleGroup
                             viewModel.filterByMuscleGroup(muscleGroup)
                         },
-                        label = { Text(muscleGroup.name) }
+                        label = { Text(muscleGroup.name, fontWeight = FontWeight.Medium) }
                     )
                 }
             }
@@ -117,7 +131,12 @@ fun ExercisePickerScreen(
             when (val state = uiState) {
                 is ExerciseLibraryUiState.Loading -> {}
                 is ExerciseLibraryUiState.Error -> {
-                    Text(state.message, color = MaterialTheme.colorScheme.error)
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(state.message, color = MaterialTheme.colorScheme.error)
+                    }
                 }
                 is ExerciseLibraryUiState.Success -> {
                     LazyColumn(
@@ -127,9 +146,7 @@ fun ExercisePickerScreen(
                         items(state.exercises) { exercise ->
                             ExercisePickerItem(
                                 exercise = exercise,
-                                onClick = {
-                                    onExerciseSelected(exercise.id)
-                                }
+                                onClick = { onExerciseSelected(exercise.id) }
                             )
                         }
                     }
@@ -144,22 +161,51 @@ fun ExercisePickerItem(exercise: Exercise, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() }
+            .clickable { onClick() },
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+        )
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(exercise.name, style = MaterialTheme.typography.titleMedium)
-            Row {
-                Text(
-                    exercise.primaryMuscleGroup.name,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary
+        Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Rounded.FitnessCenter,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp)
                 )
-                if (exercise.secondaryMuscleGroups.isNotEmpty()) {
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column {
+                Text(
+                    exercise.name,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Row {
                     Text(
-                        " + ${exercise.secondaryMuscleGroups.joinToString(", ") { it.name }}",
+                        exercise.primaryMuscleGroup.name,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium
                     )
+                    if (exercise.secondaryMuscleGroups.isNotEmpty()) {
+                        Text(
+                            " + ${exercise.secondaryMuscleGroups.joinToString(", ") { it.name }}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         }
