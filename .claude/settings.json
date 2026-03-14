@@ -1,6 +1,12 @@
 {
   "permissions": {
     "allow": [
+      "Bash(./gradlew*)",
+      "Bash(cd*)",
+      "Bash(ls*)",
+      "Bash(mkdir*)",
+      "Bash(find*)",
+      "Bash(cat*)",
       "Bash",
       "Read",
       "Edit",
