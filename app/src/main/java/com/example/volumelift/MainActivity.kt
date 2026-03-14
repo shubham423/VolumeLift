@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -41,13 +42,14 @@ fun MainApp() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    // Hide bottom bar on workout screen
-    val showBottomBar = currentRoute in listOf(
+    val bottomNavRoutes = listOf(
         Screen.Home.route,
         Screen.History.route,
         Screen.Volume.route,
         Screen.Settings.route
     )
+
+    val showBottomBar = currentRoute in bottomNavRoutes
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -60,12 +62,13 @@ fun MainApp() {
                             label = { Text(item.label) },
                             selected = currentRoute == item.route,
                             onClick = {
-                                navController.navigate(item.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
+                                if (currentRoute != item.route) {
+                                    navController.navigate(item.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            inclusive = false
+                                        }
+                                        launchSingleTop = true
                                     }
-                                    launchSingleTop = true
-                                    restoreState = true
                                 }
                             }
                         )
@@ -75,7 +78,8 @@ fun MainApp() {
         }
     ) { innerPadding ->
         NavGraph(
-            navController = navController
+            navController = navController,
+            modifier = Modifier.padding(innerPadding)
         )
     }
 }
