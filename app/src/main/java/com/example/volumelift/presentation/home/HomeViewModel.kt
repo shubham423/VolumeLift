@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -47,77 +48,75 @@ class HomeViewModel @Inject constructor(
     fun loadData() {
         viewModelScope.launch {
             try {
+                // Initialize Success state first, then start Flow collectors
                 val activeSession = workoutRepository.getActiveSession()
                 _uiState.value = HomeUiState.Success(activeSession = activeSession)
-            } catch (e: Exception) {
-                _uiState.value = HomeUiState.Error(e.message ?: "Unknown error")
-            }
-        }
 
-        // Load recent workouts with full session data (exercise logs + muscle groups)
-        viewModelScope.launch {
-            workoutRepository.getCompletedSessions().collect { sessions ->
-                val current = _uiState.value
-                if (current is HomeUiState.Success) {
-                    val exerciseMap = exerciseRepository.getAllExercises().first()
-                        .associateBy { it.id }
-                    val recentFull = sessions.take(3).map { session ->
-                        workoutRepository.getFullSession(session.id) ?: session
-                    }
-                    val muscleGroupsMap = recentFull.associate { session ->
-                        session.id to session.exerciseLogs
-                            .mapNotNull { log -> exerciseMap[log.exerciseId]?.primaryMuscleGroup }
-                            .distinct()
-                    }
-                    _uiState.value = current.copy(
-                        recentWorkouts = recentFull,
-                        sessionMuscleGroups = muscleGroupsMap
-                    )
-                }
-            }
-        }
-
-        viewModelScope.launch {
-            templateRepository.getAllTemplates().collect { templates ->
-                val current = _uiState.value
-                if (current is HomeUiState.Success) {
-                    _uiState.value = current.copy(templates = templates)
-                }
-            }
-        }
-
-        // Load weekly stats
-        viewModelScope.launch {
-            val (weekStart, weekEnd) = DateUtils.getWeekStartEnd(0)
-            workoutRepository.getSessionCountInRange(weekStart, weekEnd).collect { count ->
-                val current = _uiState.value
-                if (current is HomeUiState.Success) {
-                    _uiState.value = current.copy(weekWorkoutCount = count)
-                }
-            }
-        }
-
-        // Calculate weekly volume from sessions
-        viewModelScope.launch {
-            val (weekStart, weekEnd) = DateUtils.getWeekStartEnd(0)
-            workoutRepository.getSessionsInRange(weekStart, weekEnd).collect { sessions ->
-                var totalVol = 0.0
-                for (session in sessions) {
-                    val full = workoutRepository.getFullSession(session.id)
-                    if (full != null) {
-                        for (log in full.exerciseLogs) {
-                            for (set in log.sets) {
-                                if (set.isCompleted) {
-                                    totalVol += set.weight * set.reps
-                                }
-                            }
+                // Now launch Flow collectors — state is guaranteed to be Success
+                launch {
+                    workoutRepository.getCompletedSessions().collect { sessions ->
+                        val exerciseMap = exerciseRepository.getAllExercises().first()
+                            .associateBy { it.id }
+                        val recentFull = sessions.take(3).map { session ->
+                            workoutRepository.getFullSession(session.id) ?: session
+                        }
+                        val muscleGroupsMap = recentFull.associate { session ->
+                            session.id to session.exerciseLogs
+                                .mapNotNull { log -> exerciseMap[log.exerciseId]?.primaryMuscleGroup }
+                                .distinct()
+                        }
+                        _uiState.update { current ->
+                            if (current is HomeUiState.Success) current.copy(
+                                recentWorkouts = recentFull,
+                                sessionMuscleGroups = muscleGroupsMap
+                            ) else current
                         }
                     }
                 }
-                val current = _uiState.value
-                if (current is HomeUiState.Success) {
-                    _uiState.value = current.copy(weekTotalVolume = totalVol)
+
+                launch {
+                    templateRepository.getAllTemplates().collect { templates ->
+                        _uiState.update { current ->
+                            if (current is HomeUiState.Success) current.copy(templates = templates)
+                            else current
+                        }
+                    }
                 }
+
+                launch {
+                    val (weekStart, weekEnd) = DateUtils.getWeekStartEnd(0)
+                    workoutRepository.getSessionCountInRange(weekStart, weekEnd).collect { count ->
+                        _uiState.update { current ->
+                            if (current is HomeUiState.Success) current.copy(weekWorkoutCount = count)
+                            else current
+                        }
+                    }
+                }
+
+                launch {
+                    val (weekStart, weekEnd) = DateUtils.getWeekStartEnd(0)
+                    workoutRepository.getSessionsInRange(weekStart, weekEnd).collect { sessions ->
+                        var totalVol = 0.0
+                        for (session in sessions) {
+                            val full = workoutRepository.getFullSession(session.id)
+                            if (full != null) {
+                                for (log in full.exerciseLogs) {
+                                    for (set in log.sets) {
+                                        if (set.isCompleted) {
+                                            totalVol += set.weight * set.reps
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        _uiState.update { current ->
+                            if (current is HomeUiState.Success) current.copy(weekTotalVolume = totalVol)
+                            else current
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                _uiState.value = HomeUiState.Error(e.message ?: "Unknown error")
             }
         }
     }

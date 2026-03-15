@@ -173,7 +173,6 @@ fun HomeScreen(
                                         } else {
                                             String.format("%.0f", state.weekTotalVolume)
                                         }
-                                        val unitText = if (state.weekTotalVolume >= 1000) "k kg" else " kg"
                                         Text(
                                             volText,
                                             fontSize = 22.sp,
@@ -181,7 +180,7 @@ fun HomeScreen(
                                             color = PrimaryLight
                                         )
                                         Text(
-                                            unitText,
+                                            " kg",
                                             fontSize = 13.sp,
                                             color = TextSecondary,
                                             modifier = Modifier.padding(bottom = 2.dp)
