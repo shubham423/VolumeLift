@@ -450,15 +450,15 @@ fun ExerciseLogSection(
 
         Spacer(modifier = Modifier.height(6.dp))
 
-        // Set headers — proportional columns matching mockup ratios
+        // Set headers
         Row(
             modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Text("Set", fontSize = 10.sp, color = TextTertiary, modifier = Modifier.width(28.dp), textAlign = TextAlign.Center)
-            Text("Previous", fontSize = 10.sp, color = TextTertiary, modifier = Modifier.weight(1.5f), textAlign = TextAlign.Center)
-            Text("kg", fontSize = 10.sp, color = TextTertiary, modifier = Modifier.weight(1.2f), textAlign = TextAlign.Center)
+            Text("Set", fontSize = 10.sp, color = TextTertiary, modifier = Modifier.width(24.dp), textAlign = TextAlign.Center)
+            Text("Previous", fontSize = 10.sp, color = TextTertiary, modifier = Modifier.weight(0.9f), textAlign = TextAlign.Center)
+            Text("kg", fontSize = 10.sp, color = TextTertiary, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
             Text("Reps", fontSize = 10.sp, color = TextTertiary, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
             Spacer(modifier = Modifier.width(32.dp))
         }
@@ -475,6 +475,8 @@ fun ExerciseLogSection(
                 onDeleteSet = { onDeleteSet(set.id) }
             )
         }
+
+        Spacer(modifier = Modifier.height(6.dp))
 
         // Add set
         Text(
@@ -502,16 +504,16 @@ fun SetRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 1.5.dp),
+            .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         // Set number — fixed
         Text(
             "${set.setNumber}",
             fontSize = 12.sp,
             color = TextSecondary,
-            modifier = Modifier.width(28.dp),
+            modifier = Modifier.width(24.dp),
             textAlign = TextAlign.Center
         )
 
@@ -526,15 +528,15 @@ fun SetRow(
             previousText,
             fontSize = 11.sp,
             color = TextTertiary,
-            modifier = Modifier.weight(1.5f),
+            modifier = Modifier.weight(0.9f),
             textAlign = TextAlign.Center
         )
 
-        // Weight input — proportional, fills allocated column
+        // Weight input
         WeightPicker(
             value = set.weight,
             onValueChange = { onUpdateSet(set.copy(weight = it)) },
-            modifier = Modifier.weight(1.2f)
+            modifier = Modifier.weight(1f)
         )
 
         // Reps input — proportional, fills allocated column
