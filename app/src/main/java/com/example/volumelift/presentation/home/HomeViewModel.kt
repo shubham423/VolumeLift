@@ -134,7 +134,23 @@ class HomeViewModel @Inject constructor(
             val template = templateRepository.getTemplateById(templateId) ?: return@launch
             val sessionId = workoutRepository.startSession(templateId)
             for (exerciseId in template.exerciseIds) {
-                workoutRepository.addExerciseToSession(sessionId, exerciseId)
+                val logId = workoutRepository.addExerciseToSession(sessionId, exerciseId)
+                // Pre-fill sets from previous session
+                val prevSets = workoutRepository.getPreviousSetsForExercise(exerciseId, sessionId)
+                if (prevSets.isNotEmpty()) {
+                    for (prevSet in prevSets) {
+                        workoutRepository.addSet(logId, com.example.volumelift.domain.model.WorkoutSet(
+                            setNumber = prevSet.setNumber,
+                            weight = prevSet.weight,
+                            reps = prevSet.reps
+                        ))
+                    }
+                } else {
+                    // Default: 3 empty sets
+                    for (i in 1..3) {
+                        workoutRepository.addSet(logId, com.example.volumelift.domain.model.WorkoutSet(setNumber = i))
+                    }
+                }
             }
             onSessionCreated(sessionId)
         }

@@ -15,6 +15,7 @@ data class ExerciseLogWithSets(
     val sessionId: Long,
     val exerciseId: Long,
     val exerciseName: String = "",
+    val primaryMuscleGroup: String = "",
     val order: Int,
     val sets: List<WorkoutSet> = emptyList()
 )

@@ -22,5 +22,6 @@ interface WorkoutRepository {
     suspend fun updateSet(set: WorkoutSet)
     suspend fun deleteSet(setId: Long)
     suspend fun getFullSession(sessionId: Long): WorkoutSession?
+    suspend fun getPreviousSetsForExercise(exerciseId: Long, currentSessionId: Long): List<WorkoutSet>
     fun getSessionCountInRange(startTime: Long, endTime: Long): Flow<Int>
 }

@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.volumelift.domain.model.MuscleVolume
 import com.example.volumelift.presentation.components.EmptyState
 import com.example.volumelift.presentation.components.VolumeProgressBar
 import com.example.volumelift.presentation.theme.Background
@@ -166,8 +167,24 @@ fun VolumeScreen(
                             )
                         }
 
-                        // Volume bars
-                        items(state.muscleVolumes.sortedByDescending { it.currentSets }) { volume ->
+                        // Volume bars — sorted by status: under-target first, on-target second, over-target last
+                        val sortedVolumes = state.muscleVolumes
+                            .filter { it.currentSets > 0 || it.currentVolume > 0 }
+                            .sortedWith(compareBy<MuscleVolume> { volume ->
+                                when {
+                                    volume.volumeProgressPercent < 70f -> 0 // under
+                                    volume.volumeProgressPercent <= 110f -> 1 // on target
+                                    else -> 2 // over
+                                }
+                            }.thenBy { volume ->
+                                when {
+                                    volume.volumeProgressPercent < 70f -> volume.volumeProgressPercent // lowest first for under
+                                    volume.volumeProgressPercent > 110f -> -volume.volumeProgressPercent // highest first for over
+                                    else -> volume.volumeProgressPercent
+                                }
+                            }) + state.muscleVolumes.filter { it.currentSets == 0 && it.currentVolume == 0.0 }
+
+                        items(sortedVolumes) { volume ->
                             VolumeProgressBar(
                                 muscleVolume = volume,
                                 useKg = state.preferences.useKg,

@@ -38,6 +38,23 @@ interface SetLogDao {
     """)
     fun getAllCompletedSetsForExercise(exerciseId: Long): Flow<List<SetLogEntity>>
 
+    @Query("""
+        SELECT sl.* FROM set_logs sl
+        INNER JOIN exercise_logs el ON sl.exerciseLogId = el.id
+        WHERE el.id = (
+            SELECT el2.id FROM exercise_logs el2
+            INNER JOIN workout_sessions ws ON el2.sessionId = ws.id
+            WHERE el2.exerciseId = :exerciseId
+              AND ws.isCompleted = 1
+              AND ws.id != :currentSessionId
+            ORDER BY ws.startTime DESC
+            LIMIT 1
+        )
+        AND sl.isCompleted = 1
+        ORDER BY sl.setNumber ASC
+    """)
+    suspend fun getPreviousSetsForExercise(exerciseId: Long, currentSessionId: Long): List<SetLogEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSet(set: SetLogEntity): Long
 

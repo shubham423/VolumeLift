@@ -37,6 +37,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -188,6 +191,32 @@ fun ActiveWorkoutScreen(
                         .fillMaxSize()
                         .padding(paddingValues)
                 ) {
+                    // Volume whisper
+                    AnimatedVisibility(
+                        visible = state.volumeWhisper != null,
+                        enter = fadeIn(),
+                        exit = fadeOut()
+                    ) {
+                        state.volumeWhisper?.let { whisper ->
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(OnTarget.copy(alpha = 0.15f))
+                                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    whisper.text,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.W500,
+                                    color = OnTarget
+                                )
+                            }
+                        }
+                    }
+
                     // Rest timer bar
                     if (state.isRestTimerRunning) {
                         RestTimerBar(
@@ -204,8 +233,10 @@ fun ActiveWorkoutScreen(
                         verticalArrangement = Arrangement.spacedBy(0.dp)
                     ) {
                         items(state.exerciseLogs, key = { it.id }) { exerciseLog ->
+                            val previousSetsForExercise = state.previousSets[exerciseLog.exerciseId] ?: emptyList()
                             ExerciseLogSection(
                                 exerciseLog = exerciseLog,
+                                previousSets = previousSetsForExercise,
                                 onAddSet = { viewModel.addSet(exerciseLog.id) },
                                 onUpdateSet = { set -> viewModel.updateSet(set) },
                                 onCompleteSet = { set -> viewModel.completeSet(set) },
@@ -346,6 +377,7 @@ fun RestTimerBar(
 @Composable
 fun ExerciseLogSection(
     exerciseLog: ExerciseLogWithSets,
+    previousSets: List<WorkoutSet>,
     onAddSet: () -> Unit,
     onUpdateSet: (WorkoutSet) -> Unit,
     onCompleteSet: (WorkoutSet) -> Unit,
@@ -396,8 +428,10 @@ fun ExerciseLogSection(
         Spacer(modifier = Modifier.height(4.dp))
 
         exerciseLog.sets.forEach { set ->
+            val prevSet = previousSets.find { it.setNumber == set.setNumber }
             SetRow(
                 set = set,
+                previousSet = prevSet,
                 onUpdateSet = onUpdateSet,
                 onCompleteSet = onCompleteSet,
                 onDeleteSet = { onDeleteSet(set.id) }
@@ -422,6 +456,7 @@ fun ExerciseLogSection(
 @Composable
 fun SetRow(
     set: WorkoutSet,
+    previousSet: WorkoutSet? = null,
     onUpdateSet: (WorkoutSet) -> Unit,
     onCompleteSet: (WorkoutSet) -> Unit,
     onDeleteSet: () -> Unit
@@ -442,9 +477,15 @@ fun SetRow(
             textAlign = TextAlign.Center
         )
 
-        // Previous — proportional
+        // Previous — show last session's weight × reps or dash
+        val previousText = if (previousSet != null && previousSet.weight > 0) {
+            val w = if (previousSet.weight == previousSet.weight.toLong().toDouble())
+                previousSet.weight.toLong().toString()
+            else String.format("%.1f", previousSet.weight)
+            "$w × ${previousSet.reps}"
+        } else "\u2014"
         Text(
-            "\u2014",
+            previousText,
             fontSize = 11.sp,
             color = TextTertiary,
             modifier = Modifier.weight(1.5f),

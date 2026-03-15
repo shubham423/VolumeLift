@@ -104,6 +104,7 @@ class WorkoutRepositoryImpl @Inject constructor(
                     sessionId = log.sessionId,
                     exerciseId = log.exerciseId,
                     exerciseName = exercise?.name ?: "Unknown",
+                    primaryMuscleGroup = exercise?.primaryMuscleGroup?.name ?: "",
                     order = log.order,
                     sets = sets.map { it.toDomain() }
                 )
@@ -132,12 +133,16 @@ class WorkoutRepositoryImpl @Inject constructor(
                 sessionId = log.sessionId,
                 exerciseId = log.exerciseId,
                 exerciseName = exercise?.name ?: "Unknown",
+                primaryMuscleGroup = exercise?.primaryMuscleGroup?.name ?: "",
                 order = log.order,
                 sets = sets.map { it.toDomain() }
             )
         }
         return session.toDomain(exerciseLogsWithSets)
     }
+
+    override suspend fun getPreviousSetsForExercise(exerciseId: Long, currentSessionId: Long): List<WorkoutSet> =
+        setLogDao.getPreviousSetsForExercise(exerciseId, currentSessionId).map { it.toDomain() }
 
     override fun getSessionCountInRange(startTime: Long, endTime: Long): Flow<Int> =
         sessionDao.getSessionCountInRange(startTime, endTime)

@@ -18,6 +18,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+data class VolumeWhisper(
+    val text: String,
+    val id: Long // unique id for recomposition
+)
+
 sealed class ActiveWorkoutUiState {
     data object Loading : ActiveWorkoutUiState()
     data class Success(
@@ -26,7 +31,9 @@ sealed class ActiveWorkoutUiState {
         val elapsedTime: String = "00:00",
         val restTimerSeconds: Int = 0,
         val isRestTimerRunning: Boolean = false,
-        val defaultRestTimer: Int = 90
+        val defaultRestTimer: Int = 90,
+        val previousSets: Map<Long, List<WorkoutSet>> = emptyMap(),
+        val volumeWhisper: VolumeWhisper? = null
     ) : ActiveWorkoutUiState()
     data class Error(val message: String) : ActiveWorkoutUiState()
 }
@@ -67,16 +74,31 @@ class ActiveWorkoutViewModel @Inject constructor(
     private suspend fun refreshData() {
         val fullSession = workoutRepository.getFullSession(sessionId) ?: return
         val current = _uiState.value
+
+        // Load previous sets for each exercise
+        val prevSets = mutableMapOf<Long, List<WorkoutSet>>()
+        for (log in fullSession.exerciseLogs) {
+            if (!prevSets.containsKey(log.exerciseId)) {
+                val prev = workoutRepository.getPreviousSetsForExercise(log.exerciseId, sessionId)
+                if (prev.isNotEmpty()) {
+                    prevSets[log.exerciseId] = prev
+                }
+            }
+        }
+
         val elapsed = if (current is ActiveWorkoutUiState.Success) current.elapsedTime else "00:00"
         val restTimer = if (current is ActiveWorkoutUiState.Success) current.restTimerSeconds else 0
         val isRunning = if (current is ActiveWorkoutUiState.Success) current.isRestTimerRunning else false
+        val whisper = if (current is ActiveWorkoutUiState.Success) current.volumeWhisper else null
         _uiState.value = ActiveWorkoutUiState.Success(
             session = fullSession,
             exerciseLogs = fullSession.exerciseLogs,
             elapsedTime = elapsed,
             restTimerSeconds = restTimer,
             isRestTimerRunning = isRunning,
-            defaultRestTimer = defaultRestTimer
+            defaultRestTimer = defaultRestTimer,
+            previousSets = prevSets,
+            volumeWhisper = whisper
         )
     }
 
@@ -145,7 +167,28 @@ class ActiveWorkoutViewModel @Inject constructor(
 
     fun addExercise(exerciseId: Long) {
         viewModelScope.launch {
-            workoutRepository.addExerciseToSession(sessionId, exerciseId)
+            val exerciseLogId = workoutRepository.addExerciseToSession(sessionId, exerciseId)
+            // Auto-create sets from previous session
+            val prevSets = workoutRepository.getPreviousSetsForExercise(exerciseId, sessionId)
+            if (prevSets.isNotEmpty()) {
+                for (prevSet in prevSets) {
+                    workoutRepository.addSet(
+                        exerciseLogId,
+                        WorkoutSet(
+                            setNumber = prevSet.setNumber,
+                            weight = prevSet.weight,
+                            reps = prevSet.reps,
+                            restTimerSeconds = defaultRestTimer
+                        )
+                    )
+                }
+            } else {
+                // No previous data — add one empty set
+                workoutRepository.addSet(
+                    exerciseLogId,
+                    WorkoutSet(setNumber = 1, restTimerSeconds = defaultRestTimer)
+                )
+            }
             refreshData()
         }
     }
@@ -164,12 +207,17 @@ class ActiveWorkoutViewModel @Inject constructor(
                 val log = current.exerciseLogs.find { it.id == exerciseLogId }
                 val nextSetNumber = (log?.sets?.size ?: 0) + 1
                 val lastSet = log?.sets?.lastOrNull()
+                // Try previous session data for this set number, fall back to last set in current session
+                val prevSets = log?.let { current.previousSets[it.exerciseId] }
+                val prevSetForNumber = prevSets?.find { it.setNumber == nextSetNumber }
+                val prefillWeight = prevSetForNumber?.weight ?: lastSet?.weight ?: 0.0
+                val prefillReps = prevSetForNumber?.reps ?: lastSet?.reps ?: 0
                 workoutRepository.addSet(
                     exerciseLogId,
                     WorkoutSet(
                         setNumber = nextSetNumber,
-                        weight = lastSet?.weight ?: 0.0,
-                        reps = lastSet?.reps ?: 0,
+                        weight = prefillWeight,
+                        reps = prefillReps,
                         restTimerSeconds = defaultRestTimer
                     )
                 )
@@ -191,6 +239,26 @@ class ActiveWorkoutViewModel @Inject constructor(
             refreshData()
             val current = _uiState.value
             if (current is ActiveWorkoutUiState.Success) {
+                // Volume whisper
+                val volume = set.weight * set.reps
+                if (volume > 0) {
+                    val log = current.exerciseLogs.find { it.sets.any { s -> s.id == set.id } }
+                    val muscleName = log?.primaryMuscleGroup ?: ""
+                    val volText = if (volume >= 1000) String.format("%,.0f", volume)
+                    else String.format("%.0f", volume)
+                    val whisperText = "+$volText kg" + if (muscleName.isNotEmpty()) " $muscleName" else ""
+                    _uiState.value = current.copy(
+                        volumeWhisper = VolumeWhisper(whisperText, System.currentTimeMillis())
+                    )
+                    // Clear whisper after 2 seconds
+                    launch {
+                        delay(2000)
+                        val c = _uiState.value
+                        if (c is ActiveWorkoutUiState.Success) {
+                            _uiState.value = c.copy(volumeWhisper = null)
+                        }
+                    }
+                }
                 startRestTimer(set.restTimerSeconds)
             }
         }
