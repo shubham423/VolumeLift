@@ -1,18 +1,14 @@
 package com.example.volumelift.presentation.components
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -20,12 +16,22 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.volumelift.presentation.theme.Border
+import com.example.volumelift.presentation.theme.Surface
+import com.example.volumelift.presentation.theme.SurfaceVariant
+import com.example.volumelift.presentation.theme.TextPrimary
+import com.example.volumelift.presentation.theme.TextTertiary
 
 private fun formatWeight(value: Double): String {
     if (value == 0.0) return ""
@@ -37,49 +43,53 @@ private fun formatWeight(value: Double): String {
 fun WeightPicker(
     value: Double,
     onValueChange: (Double) -> Unit,
-    modifier: Modifier = Modifier,
-    step: Double = 2.5
+    modifier: Modifier = Modifier
 ) {
     val focusManager = LocalFocusManager.current
-    // Local text state - only synced FROM parent when not focused
     var isFocused by remember { mutableStateOf(false) }
     var localText by remember { mutableStateOf(formatWeight(value)) }
 
-    // Update local text from parent only when NOT focused
     if (!isFocused) {
         localText = formatWeight(value)
     }
 
-    Row(
-        modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    val hasValue = localText.isNotEmpty()
+    val bgColor = if (hasValue) Surface else SurfaceVariant
+    val textColor = if (hasValue) TextPrimary else TextTertiary
+
+    Box(
+        modifier = modifier
+            .height(34.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(bgColor)
+            .then(
+                if (!hasValue) Modifier.border(0.5.dp, Border, RoundedCornerShape(8.dp))
+                else Modifier
+            ),
+        contentAlignment = Alignment.Center
     ) {
-        IconButton(
-            onClick = { if (value >= step) onValueChange(value - step) },
-            modifier = Modifier.size(36.dp)
-        ) {
-            Icon(Icons.Default.Remove, contentDescription = "Decrease weight")
-        }
-        OutlinedTextField(
+        BasicTextField(
             value = localText,
             onValueChange = { newText ->
-                // Allow empty, digits, and one decimal point
                 if (newText.isEmpty() || newText.matches(Regex("^\\d*\\.?\\d*$"))) {
                     localText = newText
                 }
             },
             modifier = Modifier
-                .widthIn(min = 64.dp, max = 88.dp)
+                .fillMaxWidth()
                 .onFocusChanged { focusState ->
                     if (isFocused && !focusState.isFocused) {
-                        // Lost focus - commit to parent
                         val parsed = localText.toDoubleOrNull() ?: 0.0
                         onValueChange(parsed)
                     }
                     isFocused = focusState.isFocused
                 },
-            textStyle = MaterialTheme.typography.bodyMedium.copy(textAlign = TextAlign.Center),
+            textStyle = TextStyle(
+                fontSize = 13.sp,
+                fontWeight = FontWeight.W500,
+                color = textColor,
+                textAlign = TextAlign.Center
+            ),
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Decimal,
                 imeAction = ImeAction.Done
@@ -91,14 +101,14 @@ fun WeightPicker(
                     focusManager.clearFocus()
                 }
             ),
-            singleLine = true
+            singleLine = true,
+            cursorBrush = SolidColor(TextPrimary),
+            decorationBox = { innerTextField ->
+                Box(contentAlignment = Alignment.Center) {
+                    innerTextField()
+                }
+            }
         )
-        IconButton(
-            onClick = { onValueChange(value + step) },
-            modifier = Modifier.size(36.dp)
-        ) {
-            Icon(Icons.Default.Add, contentDescription = "Increase weight")
-        }
     }
 }
 
@@ -116,18 +126,22 @@ fun RepsPicker(
         localText = if (value == 0) "" else value.toString()
     }
 
-    Row(
-        modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    val hasValue = localText.isNotEmpty()
+    val bgColor = if (hasValue) Surface else SurfaceVariant
+    val textColor = if (hasValue) TextPrimary else TextTertiary
+
+    Box(
+        modifier = modifier
+            .height(34.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(bgColor)
+            .then(
+                if (!hasValue) Modifier.border(0.5.dp, Border, RoundedCornerShape(8.dp))
+                else Modifier
+            ),
+        contentAlignment = Alignment.Center
     ) {
-        IconButton(
-            onClick = { if (value > 0) onValueChange(value - 1) },
-            modifier = Modifier.size(36.dp)
-        ) {
-            Icon(Icons.Default.Remove, contentDescription = "Decrease reps")
-        }
-        OutlinedTextField(
+        BasicTextField(
             value = localText,
             onValueChange = { newText ->
                 if (newText.isEmpty() || newText.matches(Regex("^\\d+$"))) {
@@ -135,7 +149,7 @@ fun RepsPicker(
                 }
             },
             modifier = Modifier
-                .widthIn(min = 56.dp, max = 72.dp)
+                .fillMaxWidth()
                 .onFocusChanged { focusState ->
                     if (isFocused && !focusState.isFocused) {
                         val parsed = localText.toIntOrNull() ?: 0
@@ -143,7 +157,12 @@ fun RepsPicker(
                     }
                     isFocused = focusState.isFocused
                 },
-            textStyle = MaterialTheme.typography.bodyMedium.copy(textAlign = TextAlign.Center),
+            textStyle = TextStyle(
+                fontSize = 13.sp,
+                fontWeight = FontWeight.W500,
+                color = textColor,
+                textAlign = TextAlign.Center
+            ),
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Number,
                 imeAction = ImeAction.Done
@@ -155,13 +174,13 @@ fun RepsPicker(
                     focusManager.clearFocus()
                 }
             ),
-            singleLine = true
+            singleLine = true,
+            cursorBrush = SolidColor(TextPrimary),
+            decorationBox = { innerTextField ->
+                Box(contentAlignment = Alignment.Center) {
+                    innerTextField()
+                }
+            }
         )
-        IconButton(
-            onClick = { onValueChange(value + 1) },
-            modifier = Modifier.size(36.dp)
-        ) {
-            Icon(Icons.Default.Add, contentDescription = "Increase reps")
-        }
     }
 }

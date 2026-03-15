@@ -1,6 +1,7 @@
 package com.example.volumelift.presentation.workout
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,8 +20,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DeleteOutline
@@ -30,10 +29,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
@@ -49,14 +45,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.volumelift.data.local.entity.SetType
 import com.example.volumelift.domain.model.ExerciseLogWithSets
 import com.example.volumelift.domain.model.WorkoutSet
 import com.example.volumelift.presentation.components.RepsPicker
@@ -386,16 +380,17 @@ fun ExerciseLogSection(
 
         Spacer(modifier = Modifier.height(6.dp))
 
-        // Set headers
+        // Set headers — proportional columns matching mockup ratios
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp, vertical = 2.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
+            modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Text("Set", fontSize = 10.sp, color = TextTertiary, modifier = Modifier.width(32.dp), textAlign = TextAlign.Center)
-            Text("Previous", fontSize = 10.sp, color = TextTertiary, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
-            Text("kg", fontSize = 10.sp, color = TextTertiary, modifier = Modifier.width(56.dp), textAlign = TextAlign.Center)
-            Text("Reps", fontSize = 10.sp, color = TextTertiary, modifier = Modifier.width(44.dp), textAlign = TextAlign.Center)
-            Spacer(modifier = Modifier.width(28.dp))
+            Text("Set", fontSize = 10.sp, color = TextTertiary, modifier = Modifier.width(28.dp), textAlign = TextAlign.Center)
+            Text("Previous", fontSize = 10.sp, color = TextTertiary, modifier = Modifier.weight(1.5f), textAlign = TextAlign.Center)
+            Text("kg", fontSize = 10.sp, color = TextTertiary, modifier = Modifier.weight(1.2f), textAlign = TextAlign.Center)
+            Text("Reps", fontSize = 10.sp, color = TextTertiary, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
+            Spacer(modifier = Modifier.width(32.dp))
         }
 
         Spacer(modifier = Modifier.height(4.dp))
@@ -431,8 +426,6 @@ fun SetRow(
     onCompleteSet: (WorkoutSet) -> Unit,
     onDeleteSet: () -> Unit
 ) {
-    var showTypeMenu by remember { mutableStateOf(false) }
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -440,54 +433,47 @@ fun SetRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        // Set number
+        // Set number — fixed
         Text(
             "${set.setNumber}",
             fontSize = 12.sp,
             color = TextSecondary,
-            modifier = Modifier.width(32.dp),
+            modifier = Modifier.width(28.dp),
             textAlign = TextAlign.Center
         )
 
-        // Previous (placeholder — shows "—" for now)
+        // Previous — proportional
         Text(
-            "—",
+            "\u2014",
             fontSize = 11.sp,
             color = TextTertiary,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1.5f),
             textAlign = TextAlign.Center
         )
 
-        // Weight input
+        // Weight input — proportional, fills allocated column
         WeightPicker(
             value = set.weight,
             onValueChange = { onUpdateSet(set.copy(weight = it)) },
-            modifier = Modifier.width(56.dp)
+            modifier = Modifier.weight(1.2f)
         )
 
-        // Reps input
+        // Reps input — proportional, fills allocated column
         RepsPicker(
             value = set.reps,
             onValueChange = { onUpdateSet(set.copy(reps = it)) },
-            modifier = Modifier.width(44.dp)
+            modifier = Modifier.weight(1f)
         )
 
-        // Check button
+        // Check button — fixed
         Box(
             modifier = Modifier
-                .size(28.dp)
+                .size(32.dp)
                 .clip(RoundedCornerShape(8.dp))
-                .background(if (set.isCompleted) Primary else Color.Transparent)
                 .then(
-                    if (!set.isCompleted) Modifier.background(Color.Transparent)
-                        .clip(RoundedCornerShape(8.dp))
-                    else Modifier
+                    if (set.isCompleted) Modifier.background(Primary)
+                    else Modifier.border(0.5.dp, Border, RoundedCornerShape(8.dp))
                 )
-                .let {
-                    if (!set.isCompleted) it.background(
-                        Color.Transparent
-                    ) else it
-                }
                 .clickable {
                     if (set.isCompleted) onUpdateSet(set.copy(isCompleted = false))
                     else onCompleteSet(set.copy(isCompleted = true))
@@ -501,32 +487,6 @@ fun SetRow(
                     tint = TextPrimary,
                     modifier = Modifier.size(14.dp)
                 )
-            } else {
-                // Empty bordered box
-                Box(
-                    modifier = Modifier
-                        .size(28.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color.Transparent)
-                        .then(
-                            Modifier.background(Color.Transparent)
-                        )
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color.Transparent)
-                            .padding(0.5.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .matchParentSize()
-                                .clip(RoundedCornerShape(7.5.dp))
-                                .background(Color.Transparent)
-                        )
-                    }
-                }
             }
         }
     }
