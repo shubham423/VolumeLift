@@ -9,13 +9,17 @@ import com.example.volumelift.domain.model.WorkoutSet
 import com.example.volumelift.domain.repository.UserPreferencesRepository
 import com.example.volumelift.domain.repository.WorkoutRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 data class VolumeWhisper(
@@ -292,6 +296,29 @@ class ActiveWorkoutViewModel @Inject constructor(
     fun updateNotes(notes: String) {
         viewModelScope.launch {
             workoutRepository.updateSessionNotes(sessionId, notes)
+        }
+    }
+
+    fun testFunction() {
+        viewModelScope.launch {
+            launch {
+                println("SHUBHAM 1")
+                launch {
+                    println("SHUBHAM 2")
+                    delay(100)
+                    println("SHUBHAM 3")
+                }
+                launch {
+                    println("SHUBHAM 4")
+                    throw Exception()
+                    println("SHUBHAM 5")
+
+                }
+                println("SHUBHAM 6")
+            }
+            launch {
+                println("SHUBHAM 7")
+            }
         }
     }
 

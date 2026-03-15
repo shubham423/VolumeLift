@@ -18,7 +18,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ChevronRight
-import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.FitnessCenter
 import androidx.compose.material.icons.rounded.MonitorWeight
 import androidx.compose.material.icons.rounded.Scale
@@ -50,7 +49,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.volumelift.domain.model.ThemeMode
 import com.example.volumelift.presentation.theme.Background
 import com.example.volumelift.presentation.theme.Primary
 import com.example.volumelift.presentation.theme.PrimaryContainer
@@ -164,36 +162,6 @@ fun SettingsScreen(
                                     }
                                 }
 
-                                SettingsDivider()
-
-                                // Theme
-                                var showThemeMenu by remember { mutableStateOf(false) }
-                                SettingsRow(
-                                    icon = Icons.Rounded.DarkMode,
-                                    title = "Theme",
-                                    subtitle = state.preferences.themeMode.name,
-                                    onClick = { showThemeMenu = true }
-                                ) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        DropdownMenu(expanded = showThemeMenu, onDismissRequest = { showThemeMenu = false }) {
-                                            ThemeMode.entries.forEach { mode ->
-                                                DropdownMenuItem(
-                                                    text = { Text(mode.name) },
-                                                    onClick = {
-                                                        viewModel.updateThemeMode(mode)
-                                                        showThemeMenu = false
-                                                    }
-                                                )
-                                            }
-                                        }
-                                        Icon(
-                                            Icons.Rounded.ChevronRight,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(16.dp),
-                                            tint = TextTertiary
-                                        )
-                                    }
-                                }
                             }
                         }
                     }

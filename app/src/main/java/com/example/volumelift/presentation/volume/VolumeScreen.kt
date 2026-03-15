@@ -167,20 +167,20 @@ fun VolumeScreen(
                             )
                         }
 
-                        // Volume bars — sorted by status: under-target first, on-target second, over-target last
+                        // Volume bars — sorted by status (sets-based): under-target first, on-target second, over-target last
                         val sortedVolumes = state.muscleVolumes
                             .filter { it.currentSets > 0 || it.currentVolume > 0 }
                             .sortedWith(compareBy<MuscleVolume> { volume ->
                                 when {
-                                    volume.volumeProgressPercent < 70f -> 0 // under
-                                    volume.volumeProgressPercent <= 110f -> 1 // on target
+                                    volume.setsProgressPercent < 70f -> 0 // under
+                                    volume.setsProgressPercent <= 110f -> 1 // on target
                                     else -> 2 // over
                                 }
                             }.thenBy { volume ->
                                 when {
-                                    volume.volumeProgressPercent < 70f -> volume.volumeProgressPercent // lowest first for under
-                                    volume.volumeProgressPercent > 110f -> -volume.volumeProgressPercent // highest first for over
-                                    else -> volume.volumeProgressPercent
+                                    volume.setsProgressPercent < 70f -> volume.setsProgressPercent // lowest first for under
+                                    volume.setsProgressPercent > 110f -> -volume.setsProgressPercent // highest first for over
+                                    else -> volume.setsProgressPercent
                                 }
                             }) + state.muscleVolumes.filter { it.currentSets == 0 && it.currentVolume == 0.0 }
 
@@ -205,14 +205,15 @@ private fun VolumeSummaryPills(
     muscleVolumes: List<com.example.volumelift.domain.model.MuscleVolume>,
     modifier: Modifier = Modifier
 ) {
+    val hasData = { v: MuscleVolume -> v.currentSets > 0 || v.currentVolume > 0 }
     val onTargetCount = muscleVolumes.count {
-        it.setsProgressPercent in 85f..110f && (it.currentSets > 0 || it.currentVolume > 0)
+        it.setsProgressPercent in 70f..110f && hasData(it)
     }
     val underCount = muscleVolumes.count {
-        it.setsProgressPercent < 85f && (it.currentSets > 0 || it.currentVolume > 0)
+        it.setsProgressPercent < 70f && hasData(it)
     }
     val overCount = muscleVolumes.count {
-        it.setsProgressPercent > 110f
+        it.setsProgressPercent > 110f && hasData(it)
     }
 
     LazyRow(
