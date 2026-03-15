@@ -180,11 +180,7 @@ fun HomeScreen(
                                         modifier = Modifier.padding(top = 2.dp),
                                         verticalAlignment = Alignment.Bottom
                                     ) {
-                                        val volText = if (state.weekTotalVolume >= 1000) {
-                                            String.format("%.1f", state.weekTotalVolume / 1000)
-                                        } else {
-                                            String.format("%.0f", state.weekTotalVolume)
-                                        }
+                                        val volText = String.format("%,.0f", state.weekTotalVolume)
                                         Text(
                                             volText,
                                             fontSize = 22.sp,
