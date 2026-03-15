@@ -54,6 +54,9 @@ class ActiveWorkoutViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<ActiveWorkoutUiState>(ActiveWorkoutUiState.Loading)
     val uiState: StateFlow<ActiveWorkoutUiState> = _uiState.asStateFlow()
 
+    private val _restTimerCompleted = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val restTimerCompleted = _restTimerCompleted
+
     private var timerJob: Job? = null
     private var restTimerJob: Job? = null
     private var defaultRestTimer: Int = 90
@@ -144,6 +147,7 @@ class ActiveWorkoutViewModel @Inject constructor(
             if (current is ActiveWorkoutUiState.Success) {
                 _uiState.value = current.copy(restTimerSeconds = 0, isRestTimerRunning = false)
             }
+            _restTimerCompleted.tryEmit(Unit)
         }
     }
 
