@@ -1,7 +1,7 @@
 package com.example.volumelift.presentation.workout
 
-import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,23 +19,16 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DeleteOutline
-import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -43,8 +36,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -146,6 +137,8 @@ fun ActiveWorkoutScreen(
             }
         }
         is ActiveWorkoutUiState.Success -> {
+            val workoutName = deriveWorkoutName(state)
+
             Scaffold(
                 containerColor = Background,
                 topBar = {
@@ -153,20 +146,19 @@ fun ActiveWorkoutScreen(
                         title = {
                             Column {
                                 Text(
-                                    "Workout",
+                                    workoutName,
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.W500,
                                     color = TextPrimary
                                 )
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    // Pulsing green dot
                                     Box(
                                         modifier = Modifier
                                             .size(6.dp)
                                             .clip(CircleShape)
                                             .background(OnTarget)
                                     )
-                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
                                     Text(
                                         state.elapsedTime,
                                         fontSize = 12.sp,
@@ -193,9 +185,7 @@ fun ActiveWorkoutScreen(
                                 Text("Finish", fontSize = 12.sp, fontWeight = FontWeight.W500)
                             }
                         },
-                        colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = Background
-                        )
+                        colors = TopAppBarDefaults.topAppBarColors(containerColor = Background)
                     )
                 }
             ) { paddingValues ->
@@ -208,17 +198,19 @@ fun ActiveWorkoutScreen(
                     if (state.isRestTimerRunning) {
                         RestTimerBar(
                             seconds = state.restTimerSeconds,
-                            onCancel = { viewModel.cancelRestTimer() }
+                            onAdjust = { delta -> viewModel.adjustRestTimer(delta) },
+                            onCancel = { viewModel.cancelRestTimer() },
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                         )
                     }
 
                     LazyColumn(
                         modifier = Modifier.weight(1f),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(0.dp)
                     ) {
                         items(state.exerciseLogs, key = { it.id }) { exerciseLog ->
-                            ExerciseLogCard(
+                            ExerciseLogSection(
                                 exerciseLog = exerciseLog,
                                 onAddSet = { viewModel.addSet(exerciseLog.id) },
                                 onUpdateSet = { set -> viewModel.updateSet(set) },
@@ -226,24 +218,40 @@ fun ActiveWorkoutScreen(
                                 onDeleteSet = { setId -> viewModel.deleteSet(setId) },
                                 onRemoveExercise = { viewModel.removeExercise(exerciseLog.id) }
                             )
-                        }
 
-                        item {
-                            OutlinedButton(
-                                onClick = { onNavigateToExercisePicker(state.session.id) },
+                            // Divider between exercises
+                            Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(48.dp),
-                                shape = RoundedCornerShape(10.dp),
-                                border = ButtonDefaults.outlinedButtonBorder(enabled = true)
+                                    .padding(vertical = 8.dp)
+                                    .height(0.5.dp)
+                                    .background(SurfaceVariant)
+                            )
+                        }
+
+                        // Add exercise button
+                        item {
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { onNavigateToExercisePicker(state.session.id) },
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(containerColor = Surface),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                             ) {
-                                Icon(
-                                    Icons.Rounded.Add,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Add Exercise", fontWeight = FontWeight.W500)
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(12.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        "+ Add exercise",
+                                        fontSize = 13.sp,
+                                        color = PrimaryLight,
+                                        fontWeight = FontWeight.W500
+                                    )
+                                }
                             }
                         }
                     }
@@ -253,10 +261,29 @@ fun ActiveWorkoutScreen(
     }
 }
 
+private fun deriveWorkoutName(state: ActiveWorkoutUiState.Success): String {
+    val session = state.session
+    if (session.notes.isNotBlank()) return session.notes
+    if (state.exerciseLogs.isEmpty()) return "Workout"
+    val firstName = state.exerciseLogs.firstOrNull()?.exerciseName ?: ""
+    val count = state.exerciseLogs.size
+    return if (count <= 1) firstName.ifBlank { "Workout" }
+    else "$firstName + ${count - 1} more"
+}
+
 @Composable
-fun RestTimerBar(seconds: Int, onCancel: () -> Unit) {
+fun RestTimerBar(
+    seconds: Int,
+    onAdjust: (Int) -> Unit,
+    onCancel: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val minutes = seconds / 60
+    val secs = seconds % 60
+    val timeText = "$minutes:${String.format("%02d", secs)}"
+
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .background(RestTimerBg)
@@ -264,37 +291,58 @@ fun RestTimerBar(seconds: Int, onCancel: () -> Unit) {
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Icon(
-                Icons.Rounded.Timer,
-                contentDescription = null,
-                tint = UnderTarget,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "REST TIMER",
-                fontSize = 10.sp,
-                fontWeight = FontWeight.W500,
-                color = UnderTarget,
-                letterSpacing = 0.5.sp
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = "${seconds}s",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.W500,
-                color = TextPrimary,
-                modifier = Modifier.weight(1f)
-            )
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(RestTimerButtonBg)
-            ) {
-                TextButton(onClick = onCancel) {
-                    Text("Skip", fontSize = 12.sp, color = UnderTarget)
+            Column {
+                Text(
+                    "REST TIMER",
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.W500,
+                    color = UnderTarget,
+                    letterSpacing = 0.5.sp
+                )
+                Text(
+                    timeText,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.W500,
+                    color = TextPrimary,
+                    modifier = Modifier.padding(top = 1.dp)
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // -15 button
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(RestTimerButtonBg)
+                        .clickable { onAdjust(-15) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("-15", fontSize = 12.sp, color = UnderTarget)
+                }
+                // +15 button
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(RestTimerButtonBg)
+                        .clickable { onAdjust(15) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("+15", fontSize = 12.sp, color = UnderTarget)
+                }
+                // Cancel button
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(UnderTarget.copy(alpha = 0.2f))
+                        .clickable { onCancel() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("\u00D7", fontSize = 14.sp, color = UnderTarget)
                 }
             }
         }
@@ -302,7 +350,7 @@ fun RestTimerBar(seconds: Int, onCancel: () -> Unit) {
 }
 
 @Composable
-fun ExerciseLogCard(
+fun ExerciseLogSection(
     exerciseLog: ExerciseLogWithSets,
     onAddSet: () -> Unit,
     onUpdateSet: (WorkoutSet) -> Unit,
@@ -310,74 +358,69 @@ fun ExerciseLogCard(
     onDeleteSet: (Long) -> Unit,
     onRemoveExercise: () -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+    Column(modifier = Modifier.padding(vertical = 4.dp)) {
+        // Exercise name + remove
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = exerciseLog.exerciseName,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.W500,
+                color = PrimaryLight
+            )
+            IconButton(
+                onClick = onRemoveExercise,
+                modifier = Modifier.size(28.dp)
             ) {
-                Text(
-                    text = exerciseLog.exerciseName,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.W500,
-                    color = PrimaryLight
+                Icon(
+                    Icons.Rounded.DeleteOutline,
+                    contentDescription = "Remove exercise",
+                    tint = OverTarget.copy(alpha = 0.6f),
+                    modifier = Modifier.size(16.dp)
                 )
-                IconButton(
-                    onClick = onRemoveExercise,
-                    modifier = Modifier.size(28.dp)
-                ) {
-                    Icon(
-                        Icons.Rounded.DeleteOutline,
-                        contentDescription = "Remove exercise",
-                        tint = OverTarget.copy(alpha = 0.6f),
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Header
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(SurfaceVariant)
-                    .padding(horizontal = 4.dp, vertical = 6.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text("Set", fontSize = 10.sp, color = TextTertiary, modifier = Modifier.width(32.dp), textAlign = TextAlign.Center)
-                Text("Type", fontSize = 10.sp, color = TextTertiary, modifier = Modifier.width(64.dp), textAlign = TextAlign.Center)
-                Text("kg", fontSize = 10.sp, color = TextTertiary, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
-                Text("Reps", fontSize = 10.sp, color = TextTertiary, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
-                Text("", fontSize = 10.sp, modifier = Modifier.width(44.dp))
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            exerciseLog.sets.forEach { set ->
-                SetRow(
-                    set = set,
-                    onUpdateSet = onUpdateSet,
-                    onCompleteSet = onCompleteSet,
-                    onDeleteSet = { onDeleteSet(set.id) }
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-            TextButton(
-                onClick = onAddSet,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("+ Add Set", fontSize = 12.sp, color = PrimaryLight, fontWeight = FontWeight.W500)
             }
         }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        // Set headers
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp, vertical = 2.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text("Set", fontSize = 10.sp, color = TextTertiary, modifier = Modifier.width(32.dp), textAlign = TextAlign.Center)
+            Text("Previous", fontSize = 10.sp, color = TextTertiary, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
+            Text("kg", fontSize = 10.sp, color = TextTertiary, modifier = Modifier.width(56.dp), textAlign = TextAlign.Center)
+            Text("Reps", fontSize = 10.sp, color = TextTertiary, modifier = Modifier.width(44.dp), textAlign = TextAlign.Center)
+            Spacer(modifier = Modifier.width(28.dp))
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        exerciseLog.sets.forEach { set ->
+            SetRow(
+                set = set,
+                onUpdateSet = onUpdateSet,
+                onCompleteSet = onCompleteSet,
+                onDeleteSet = { onDeleteSet(set.id) }
+            )
+        }
+
+        // Add set
+        Text(
+            "+ Add set",
+            fontSize = 12.sp,
+            color = PrimaryLight,
+            fontWeight = FontWeight.W500,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onAddSet() }
+                .padding(vertical = 8.dp),
+            textAlign = TextAlign.Center
+        )
     }
 }
 
@@ -390,21 +433,14 @@ fun SetRow(
 ) {
     var showTypeMenu by remember { mutableStateOf(false) }
 
-    val rowBackground = if (set.isCompleted) {
-        OnTarget.copy(alpha = 0.08f)
-    } else {
-        Color.Transparent
-    }
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(rowBackground)
-            .padding(vertical = 2.dp),
+            .padding(vertical = 1.5.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
+        // Set number
         Text(
             "${set.setNumber}",
             fontSize = 12.sp,
@@ -413,60 +449,85 @@ fun SetRow(
             textAlign = TextAlign.Center
         )
 
-        Box(modifier = Modifier.width(64.dp)) {
-            FilterChip(
-                selected = false,
-                onClick = { showTypeMenu = true },
-                label = {
-                    Text(
-                        when (set.setType) {
-                            SetType.Working -> "W"
-                            SetType.Warmup -> "WU"
-                            SetType.Dropset -> "D"
-                            SetType.Failure -> "F"
-                        },
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.W500
-                    )
-                }
-            )
-            DropdownMenu(expanded = showTypeMenu, onDismissRequest = { showTypeMenu = false }) {
-                SetType.entries.forEach { type ->
-                    DropdownMenuItem(
-                        text = { Text(type.name) },
-                        onClick = {
-                            onUpdateSet(set.copy(setType = type))
-                            showTypeMenu = false
-                        }
-                    )
-                }
-            }
-        }
+        // Previous (placeholder — shows "—" for now)
+        Text(
+            "—",
+            fontSize = 11.sp,
+            color = TextTertiary,
+            modifier = Modifier.weight(1f),
+            textAlign = TextAlign.Center
+        )
 
+        // Weight input
         WeightPicker(
             value = set.weight,
             onValueChange = { onUpdateSet(set.copy(weight = it)) },
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.width(56.dp)
         )
 
+        // Reps input
         RepsPicker(
             value = set.reps,
             onValueChange = { onUpdateSet(set.copy(reps = it)) },
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.width(44.dp)
         )
 
-        Checkbox(
-            checked = set.isCompleted,
-            onCheckedChange = { checked ->
-                if (checked) onCompleteSet(set.copy(isCompleted = true))
-                else onUpdateSet(set.copy(isCompleted = false))
-            },
-            modifier = Modifier.width(44.dp),
-            colors = CheckboxDefaults.colors(
-                checkedColor = Primary,
-                checkmarkColor = TextPrimary,
-                uncheckedColor = Border
-            )
-        )
+        // Check button
+        Box(
+            modifier = Modifier
+                .size(28.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(if (set.isCompleted) Primary else Color.Transparent)
+                .then(
+                    if (!set.isCompleted) Modifier.background(Color.Transparent)
+                        .clip(RoundedCornerShape(8.dp))
+                    else Modifier
+                )
+                .let {
+                    if (!set.isCompleted) it.background(
+                        Color.Transparent
+                    ) else it
+                }
+                .clickable {
+                    if (set.isCompleted) onUpdateSet(set.copy(isCompleted = false))
+                    else onCompleteSet(set.copy(isCompleted = true))
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            if (set.isCompleted) {
+                Icon(
+                    Icons.Rounded.Check,
+                    contentDescription = "Completed",
+                    tint = TextPrimary,
+                    modifier = Modifier.size(14.dp)
+                )
+            } else {
+                // Empty bordered box
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.Transparent)
+                        .then(
+                            Modifier.background(Color.Transparent)
+                        )
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color.Transparent)
+                            .padding(0.5.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .clip(RoundedCornerShape(7.5.dp))
+                                .background(Color.Transparent)
+                        )
+                    }
+                }
+            }
+        }
     }
 }

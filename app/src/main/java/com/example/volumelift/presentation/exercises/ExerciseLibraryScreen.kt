@@ -12,14 +12,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -29,15 +27,11 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -54,6 +48,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.volumelift.data.local.entity.MuscleGroup
 import com.example.volumelift.domain.model.Exercise
 import com.example.volumelift.presentation.theme.Background
+import com.example.volumelift.presentation.theme.MuscleSecondaryBg
+import com.example.volumelift.presentation.theme.MuscleSecondaryColor
 import com.example.volumelift.presentation.theme.OverTarget
 import com.example.volumelift.presentation.theme.Primary
 import com.example.volumelift.presentation.theme.PrimaryContainer
@@ -87,26 +83,6 @@ fun ExerciseLibraryScreen(
 
     Scaffold(
         containerColor = Background,
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        "Exercise Library",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.W500,
-                        color = TextPrimary
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = TextSecondary)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Background
-                )
-            )
-        },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { showAddDialog = true },
@@ -123,6 +99,16 @@ fun ExerciseLibraryScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+            // Title
+            Text(
+                "Exercises",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.W500,
+                color = TextPrimary,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
+            )
+
+            // Search bar
             SearchBar(
                 query = searchQuery,
                 onQueryChange = {
@@ -138,11 +124,12 @@ fun ExerciseLibraryScreen(
                 placeholder = { Text("Search exercises...", fontSize = 13.sp, color = TextTertiary) }
             ) {}
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
+            // Filter chips
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 item {
                     FilterChip(
@@ -151,7 +138,7 @@ fun ExerciseLibraryScreen(
                             selectedMuscleGroup = null
                             viewModel.filterByMuscleGroup(null)
                         },
-                        label = { Text("All", fontSize = 11.sp) },
+                        label = { Text("All", fontSize = 11.sp, fontWeight = FontWeight.W500) },
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = Primary,
                             selectedLabelColor = TextPrimary,
@@ -180,6 +167,8 @@ fun ExerciseLibraryScreen(
                 }
             }
 
+            Spacer(modifier = Modifier.height(12.dp))
+
             when (val state = uiState) {
                 is ExerciseLibraryUiState.Loading -> {}
                 is ExerciseLibraryUiState.Error -> {
@@ -192,15 +181,17 @@ fun ExerciseLibraryScreen(
                 }
                 is ExerciseLibraryUiState.Success -> {
                     LazyColumn(
-                        contentPadding = PaddingValues(16.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         items(state.exercises) { exercise ->
                             ExerciseItem(
                                 exercise = exercise,
+                                prWeight = state.prMap[exercise.id],
                                 onClick = { onNavigateToDetail(exercise.id) }
                             )
                         }
+                        item { Spacer(modifier = Modifier.height(80.dp)) }
                     }
                 }
             }
@@ -209,7 +200,11 @@ fun ExerciseLibraryScreen(
 }
 
 @Composable
-fun ExerciseItem(exercise: Exercise, onClick: () -> Unit) {
+fun ExerciseItem(
+    exercise: Exercise,
+    prWeight: Double? = null,
+    onClick: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -222,30 +217,16 @@ fun ExerciseItem(exercise: Exercise, onClick: () -> Unit) {
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Left: name + tags
             Column(modifier = Modifier.weight(1f)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        exercise.name,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.W500,
-                        color = TextPrimary
-                    )
-                    if (exercise.isCustom) {
-                        Text(
-                            "Custom",
-                            fontSize = 9.sp,
-                            color = PrimaryLight,
-                            fontWeight = FontWeight.W500
-                        )
-                    }
-                }
+                Text(
+                    exercise.name,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.W500,
+                    color = TextPrimary
+                )
                 Spacer(modifier = Modifier.height(4.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    // Primary muscle tag
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(4.dp))
@@ -258,21 +239,26 @@ fun ExerciseItem(exercise: Exercise, onClick: () -> Unit) {
                             color = PrimaryLight
                         )
                     }
-                    // Secondary muscle tags
                     exercise.secondaryMuscleGroups.forEach { mg ->
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(4.dp))
-                                .background(com.example.volumelift.presentation.theme.MuscleSecondaryBg)
+                                .background(MuscleSecondaryBg)
                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                         ) {
-                            Text(
-                                mg.name,
-                                fontSize = 9.sp,
-                                color = com.example.volumelift.presentation.theme.MuscleSecondaryColor
-                            )
+                            Text(mg.name, fontSize = 9.sp, color = MuscleSecondaryColor)
                         }
                     }
+                }
+            }
+            // Right: PR info
+            if (prWeight != null) {
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        "PR: ${String.format("%.0f", prWeight)}kg",
+                        fontSize = 11.sp,
+                        color = PrimaryLight
+                    )
                 }
             }
         }

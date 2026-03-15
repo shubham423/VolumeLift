@@ -59,4 +59,59 @@ object DateUtils {
     fun todayStartMillis(): Long {
         return LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
     }
+
+    /** "SATURDAY, MAR 14" overline format */
+    fun formatDateOverline(timestamp: Long): String {
+        val sdf = SimpleDateFormat("EEEE, MMM dd", Locale.getDefault())
+        return sdf.format(timestamp).uppercase(Locale.getDefault())
+    }
+
+    /** Friendly duration like "58 min" or "1h 12m" */
+    fun formatDurationShort(startTime: Long, endTime: Long?): String {
+        val end = endTime ?: System.currentTimeMillis()
+        val totalMinutes = TimeUnit.MILLISECONDS.toMinutes(end - startTime).toInt()
+        return if (totalMinutes >= 60) {
+            "${totalMinutes / 60}h ${totalMinutes % 60}m"
+        } else {
+            "$totalMinutes min"
+        }
+    }
+
+    /** Relative date like "Yesterday", "2 days ago", "Today" */
+    fun formatRelativeDate(timestamp: Long): String {
+        val today = LocalDate.now()
+        val date = Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()).toLocalDate()
+        val days = java.time.temporal.ChronoUnit.DAYS.between(date, today).toInt()
+        return when (days) {
+            0 -> "Today"
+            1 -> "Yesterday"
+            else -> "$days days ago"
+        }
+    }
+
+    /** "FRIDAY, MAR 14" date header */
+    fun formatDateHeader(timestamp: Long): String {
+        val sdf = SimpleDateFormat("EEEE, MMM dd", Locale.getDefault())
+        return sdf.format(timestamp).uppercase(Locale.getDefault())
+    }
+
+    /** Day of week short (M, T, W, T, F, S, S) */
+    fun getDayOfWeekShort(date: LocalDate): String {
+        return when (date.dayOfWeek) {
+            DayOfWeek.MONDAY -> "M"
+            DayOfWeek.TUESDAY -> "T"
+            DayOfWeek.WEDNESDAY -> "W"
+            DayOfWeek.THURSDAY -> "T"
+            DayOfWeek.FRIDAY -> "F"
+            DayOfWeek.SATURDAY -> "S"
+            DayOfWeek.SUNDAY -> "S"
+        }
+    }
+
+    /** Get all 7 days of the current week as LocalDate list */
+    fun getWeekDays(weekOffset: Int = 0): List<LocalDate> {
+        val now = LocalDate.now().plusWeeks(weekOffset.toLong())
+        val monday = now.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        return (0L..6L).map { monday.plusDays(it) }
+    }
 }

@@ -13,9 +13,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -43,19 +41,19 @@ fun VolumeProgressBar(
     modifier: Modifier = Modifier,
     useKg: Boolean = true
 ) {
-    val setsProgress = (muscleVolume.setsProgressPercent / 100f).coerceAtMost(1f)
+    val volumeProgress = muscleVolume.volumeProgressPercent
+    val barFraction = (volumeProgress / 100f).coerceAtMost(1f)
     val statusColor = when {
-        muscleVolume.setsProgressPercent >= 110f -> OverTarget
-        muscleVolume.setsProgressPercent >= 85f -> OnTarget
+        volumeProgress >= 110f -> OverTarget
+        volumeProgress >= 70f -> OnTarget
         else -> UnderTarget
     }
 
-    // Gradient per design tokens
     val progressBrush = when {
-        muscleVolume.setsProgressPercent >= 110f -> Brush.horizontalGradient(
+        volumeProgress >= 110f -> Brush.horizontalGradient(
             listOf(Color(0xFFA33030), OverTarget)
         )
-        muscleVolume.setsProgressPercent >= 85f -> Brush.horizontalGradient(
+        volumeProgress >= 70f -> Brush.horizontalGradient(
             listOf(Primary, OnTarget)
         )
         else -> Brush.horizontalGradient(
@@ -63,58 +61,59 @@ fun VolumeProgressBar(
         )
     }
 
-    val setsChangeText = if (muscleVolume.previousWeekSets > 0) {
-        val change = muscleVolume.setsWeekOverWeekChange
-        if (change >= 0) "+${String.format("%.0f", change)}%" else "${String.format("%.0f", change)}%"
+    val unit = if (useKg) "kg" else "lbs"
+
+    // Week-over-week change
+    val changeText = if (muscleVolume.previousWeekVolume > 0) {
+        val change = muscleVolume.volumeWeekOverWeekChange
+        val arrow = if (change >= 0) "\u2191" else "\u2193"
+        "$arrow ${String.format("%.0f", kotlin.math.abs(change))}%"
     } else ""
 
-    val unit = if (useKg) "kg" else "lbs"
+    val changeColor = if (muscleVolume.previousWeekVolume > 0) {
+        if (muscleVolume.volumeWeekOverWeekChange >= 0) statusColor else OverTarget
+    } else TextSecondary
 
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(Surface)
-            .padding(horizontal = 14.dp, vertical = 12.dp)
     ) {
-        // Row 1: Muscle name ... Volume value + arrow
+        // Row 1: Muscle name ... Volume value + change arrow
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.Bottom
         ) {
             Text(
                 text = muscleVolume.muscleGroup.name,
-                fontSize = 14.sp,
+                fontSize = 13.sp,
                 fontWeight = FontWeight.W500,
                 color = TextPrimary
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
+                val volText = if (muscleVolume.currentVolume >= 1000) {
+                    String.format("%,.0f", muscleVolume.currentVolume)
+                } else {
+                    String.format("%.0f", muscleVolume.currentVolume)
+                }
                 Text(
-                    text = "${muscleVolume.currentSets}",
+                    "$volText $unit",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.W500,
                     color = statusColor
                 )
-                Text(
-                    text = " / ${muscleVolume.targetSets}",
-                    fontSize = 12.sp,
-                    color = TextSecondary
-                )
-                if (setsChangeText.isNotEmpty()) {
+                if (changeText.isNotEmpty()) {
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = setsChangeText,
+                        changeText,
                         fontSize = 10.sp,
-                        color = statusColor
+                        color = changeColor
                     )
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Row 2: Progress bar — 8dp height per design tokens
+        // Progress bar
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -125,7 +124,7 @@ fun VolumeProgressBar(
             Box(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .fillMaxWidth(setsProgress)
+                    .fillMaxWidth(barFraction)
                     .clip(RoundedCornerShape(4.dp))
                     .background(progressBrush)
                     .animateContentSize(
@@ -137,24 +136,25 @@ fun VolumeProgressBar(
             )
         }
 
-        // Row 3: Target label ... Percentage
-        if (muscleVolume.currentVolume > 0 || muscleVolume.targetSets > 0) {
-            Spacer(modifier = Modifier.height(4.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = "${String.format("%.0f", muscleVolume.currentVolume)} $unit",
-                    fontSize = 9.sp,
-                    color = TextTertiary
-                )
-                Text(
-                    text = "${String.format("%.0f", muscleVolume.setsProgressPercent)}%",
-                    fontSize = 9.sp,
-                    color = TextTertiary
-                )
+        // Row 3: Target ... Percentage
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            val targetText = if (muscleVolume.targetVolume >= 1000) {
+                "Target: ${String.format("%,.0f", muscleVolume.targetVolume)} $unit"
+            } else {
+                "Target: ${String.format("%.0f", muscleVolume.targetVolume)} $unit"
             }
+            Text(targetText, fontSize = 9.sp, color = TextTertiary)
+
+            val percentText = if (volumeProgress > 100f) {
+                "${String.format("%.0f", volumeProgress)}%"
+            } else {
+                "${String.format("%.0f", volumeProgress)}%"
+            }
+            val percentColor = if (volumeProgress > 110f) OverTarget else TextTertiary
+            Text(percentText, fontSize = 9.sp, color = percentColor)
         }
     }
 }

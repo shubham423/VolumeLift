@@ -121,6 +121,20 @@ class ActiveWorkoutViewModel @Inject constructor(
         }
     }
 
+    fun adjustRestTimer(delta: Int) {
+        val current = _uiState.value
+        if (current is ActiveWorkoutUiState.Success && current.isRestTimerRunning) {
+            val newSeconds = (current.restTimerSeconds + delta).coerceAtLeast(0)
+            if (newSeconds == 0) {
+                cancelRestTimer()
+            } else {
+                // Restart the timer with the adjusted value
+                restTimerJob?.cancel()
+                startRestTimer(newSeconds)
+            }
+        }
+    }
+
     fun cancelRestTimer() {
         restTimerJob?.cancel()
         val current = _uiState.value

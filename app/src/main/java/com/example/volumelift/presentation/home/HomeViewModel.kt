@@ -2,14 +2,18 @@ package com.example.volumelift.presentation.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.volumelift.data.local.entity.MuscleGroup
 import com.example.volumelift.domain.model.WorkoutSession
 import com.example.volumelift.domain.model.WorkoutTemplate
+import com.example.volumelift.domain.repository.ExerciseRepository
 import com.example.volumelift.domain.repository.TemplateRepository
 import com.example.volumelift.domain.repository.WorkoutRepository
+import com.example.volumelift.util.DateUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -18,7 +22,10 @@ sealed class HomeUiState {
     data class Success(
         val activeSession: WorkoutSession? = null,
         val recentWorkouts: List<WorkoutSession> = emptyList(),
-        val templates: List<WorkoutTemplate> = emptyList()
+        val templates: List<WorkoutTemplate> = emptyList(),
+        val weekWorkoutCount: Int = 0,
+        val weekTotalVolume: Double = 0.0,
+        val sessionMuscleGroups: Map<Long, List<MuscleGroup>> = emptyMap()
     ) : HomeUiState()
     data class Error(val message: String) : HomeUiState()
 }
@@ -26,7 +33,8 @@ sealed class HomeUiState {
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val workoutRepository: WorkoutRepository,
-    private val templateRepository: TemplateRepository
+    private val templateRepository: TemplateRepository,
+    private val exerciseRepository: ExerciseRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
@@ -46,11 +54,25 @@ class HomeViewModel @Inject constructor(
             }
         }
 
+        // Load recent workouts with full session data (exercise logs + muscle groups)
         viewModelScope.launch {
             workoutRepository.getCompletedSessions().collect { sessions ->
                 val current = _uiState.value
                 if (current is HomeUiState.Success) {
-                    _uiState.value = current.copy(recentWorkouts = sessions.take(5))
+                    val exerciseMap = exerciseRepository.getAllExercises().first()
+                        .associateBy { it.id }
+                    val recentFull = sessions.take(3).map { session ->
+                        workoutRepository.getFullSession(session.id) ?: session
+                    }
+                    val muscleGroupsMap = recentFull.associate { session ->
+                        session.id to session.exerciseLogs
+                            .mapNotNull { log -> exerciseMap[log.exerciseId]?.primaryMuscleGroup }
+                            .distinct()
+                    }
+                    _uiState.value = current.copy(
+                        recentWorkouts = recentFull,
+                        sessionMuscleGroups = muscleGroupsMap
+                    )
                 }
             }
         }
@@ -60,6 +82,41 @@ class HomeViewModel @Inject constructor(
                 val current = _uiState.value
                 if (current is HomeUiState.Success) {
                     _uiState.value = current.copy(templates = templates)
+                }
+            }
+        }
+
+        // Load weekly stats
+        viewModelScope.launch {
+            val (weekStart, weekEnd) = DateUtils.getWeekStartEnd(0)
+            workoutRepository.getSessionCountInRange(weekStart, weekEnd).collect { count ->
+                val current = _uiState.value
+                if (current is HomeUiState.Success) {
+                    _uiState.value = current.copy(weekWorkoutCount = count)
+                }
+            }
+        }
+
+        // Calculate weekly volume from sessions
+        viewModelScope.launch {
+            val (weekStart, weekEnd) = DateUtils.getWeekStartEnd(0)
+            workoutRepository.getSessionsInRange(weekStart, weekEnd).collect { sessions ->
+                var totalVol = 0.0
+                for (session in sessions) {
+                    val full = workoutRepository.getFullSession(session.id)
+                    if (full != null) {
+                        for (log in full.exerciseLogs) {
+                            for (set in log.sets) {
+                                if (set.isCompleted) {
+                                    totalVol += set.weight * set.reps
+                                }
+                            }
+                        }
+                    }
+                }
+                val current = _uiState.value
+                if (current is HomeUiState.Success) {
+                    _uiState.value = current.copy(weekTotalVolume = totalVol)
                 }
             }
         }

@@ -14,16 +14,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.material.icons.rounded.ChevronLeft
 import androidx.compose.material.icons.rounded.ChevronRight
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -36,7 +34,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -44,22 +41,24 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.volumelift.presentation.components.EmptyState
 import com.example.volumelift.presentation.components.VolumeProgressBar
 import com.example.volumelift.presentation.theme.Background
+import com.example.volumelift.presentation.theme.OnTarget
+import com.example.volumelift.presentation.theme.OnTargetBg
+import com.example.volumelift.presentation.theme.OverTarget
+import com.example.volumelift.presentation.theme.OverTargetBg
 import com.example.volumelift.presentation.theme.PrimaryLight
 import com.example.volumelift.presentation.theme.Surface
-import com.example.volumelift.presentation.theme.SurfaceVariant
 import com.example.volumelift.presentation.theme.TextPrimary
 import com.example.volumelift.presentation.theme.TextSecondary
 import com.example.volumelift.presentation.theme.TextTertiary
+import com.example.volumelift.presentation.theme.UnderTarget
+import com.example.volumelift.presentation.theme.UnderTargetBg
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VolumeScreen(
     viewModel: VolumeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    Scaffold(
-        containerColor = Background
-    ) { paddingValues ->
+    Scaffold(containerColor = Background) { paddingValues ->
         when (val state = uiState) {
             is VolumeUiState.Loading -> {
                 Box(
@@ -78,90 +77,105 @@ fun VolumeScreen(
                 }
             }
             is VolumeUiState.Success -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().padding(paddingValues),
+                    contentPadding = PaddingValues(top = 12.dp, bottom = 80.dp)
                 ) {
-                    // Title
-                    Text(
-                        "Weekly Volume",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.W500,
-                        color = TextPrimary,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-                    )
-
-                    // Week navigation
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(
-                            onClick = { viewModel.previousWeek() },
-                            colors = IconButtonDefaults.iconButtonColors(
-                                containerColor = Surface
-                            )
-                        ) {
-                            Icon(Icons.Rounded.ChevronLeft, contentDescription = "Previous week", tint = TextSecondary)
-                        }
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    // Title + week nav
+                    item {
+                        Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
                             Text(
-                                if (state.weekOffset == 0) "THIS WEEK" else state.weekLabel,
-                                fontSize = 11.sp,
+                                "Weekly volume",
+                                fontSize = 20.sp,
                                 fontWeight = FontWeight.W500,
-                                color = TextTertiary,
-                                letterSpacing = 0.5.sp
+                                color = TextPrimary
                             )
-                            if (state.weekOffset != 0) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(top = 4.dp)
+                            ) {
                                 Text(
                                     state.weekLabel,
                                     fontSize = 12.sp,
                                     color = TextSecondary
                                 )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .size(24.dp)
+                                        .clip(RoundedCornerShape(7.dp))
+                                        .background(Surface)
+                                        .let {
+                                            it
+                                        },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    IconButton(
+                                        onClick = { viewModel.previousWeek() },
+                                        modifier = Modifier.size(24.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Rounded.ChevronLeft,
+                                            contentDescription = "Previous week",
+                                            tint = TextSecondary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .size(24.dp)
+                                        .clip(RoundedCornerShape(7.dp))
+                                        .background(Surface),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    IconButton(
+                                        onClick = { viewModel.nextWeek() },
+                                        enabled = state.weekOffset < 0,
+                                        modifier = Modifier.size(24.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Rounded.ChevronRight,
+                                            contentDescription = "Next week",
+                                            tint = if (state.weekOffset < 0) TextSecondary else TextTertiary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                }
                             }
-                        }
-                        IconButton(
-                            onClick = { viewModel.nextWeek() },
-                            enabled = state.weekOffset < 0,
-                            colors = IconButtonDefaults.iconButtonColors(
-                                containerColor = Surface
-                            )
-                        ) {
-                            Icon(Icons.Rounded.ChevronRight, contentDescription = "Next week", tint = TextSecondary)
                         }
                     }
 
                     val hasAnyData = state.muscleVolumes.any { it.currentSets > 0 || it.currentVolume > 0 }
 
                     if (!hasAnyData) {
-                        EmptyState(
-                            icon = Icons.AutoMirrored.Filled.ShowChart,
-                            title = "No Volume Data",
-                            subtitle = "Complete workouts to see your weekly muscle volume breakdown here."
-                        )
-                    } else {
-                        LazyColumn(
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            // Summary card
-                            item {
-                                VolumeSummaryCard(state)
-                            }
-
-                            items(state.muscleVolumes.sortedByDescending { it.currentSets }) { volume ->
-                                VolumeProgressBar(
-                                    muscleVolume = volume,
-                                    useKg = state.preferences.useKg
-                                )
-                            }
-
-                            item { Spacer(modifier = Modifier.height(16.dp)) }
+                        item {
+                            EmptyState(
+                                icon = Icons.AutoMirrored.Filled.ShowChart,
+                                title = "No Volume Data",
+                                subtitle = "Complete workouts to see your weekly muscle volume breakdown here."
+                            )
                         }
+                    } else {
+                        // Summary pills
+                        item {
+                            VolumeSummaryPills(
+                                muscleVolumes = state.muscleVolumes,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                            )
+                        }
+
+                        // Volume bars
+                        items(state.muscleVolumes.sortedByDescending { it.currentSets }) { volume ->
+                            VolumeProgressBar(
+                                muscleVolume = volume,
+                                useKg = state.preferences.useKg,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 3.dp)
+                            )
+                        }
+
+                        item { Spacer(modifier = Modifier.height(16.dp)) }
                     }
                 }
             }
@@ -170,78 +184,58 @@ fun VolumeScreen(
 }
 
 @Composable
-private fun VolumeSummaryCard(state: VolumeUiState.Success) {
-    val totalSets = state.muscleVolumes.sumOf { it.currentSets }
-    val totalTargetSets = state.muscleVolumes.sumOf { it.targetSets }
-    val totalVolume = state.muscleVolumes.sumOf { it.currentVolume }
-    val unit = if (state.preferences.useKg) "kg" else "lbs"
+private fun VolumeSummaryPills(
+    muscleVolumes: List<com.example.volumelift.domain.model.MuscleVolume>,
+    modifier: Modifier = Modifier
+) {
+    val onTargetCount = muscleVolumes.count {
+        it.setsProgressPercent in 85f..110f && (it.currentSets > 0 || it.currentVolume > 0)
+    }
+    val underCount = muscleVolumes.count {
+        it.setsProgressPercent < 85f && (it.currentSets > 0 || it.currentVolume > 0)
+    }
+    val overCount = muscleVolumes.count {
+        it.setsProgressPercent > 110f
+    }
 
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 4.dp),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = Surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    LazyRow(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            // Total sets stat
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    "$totalSets",
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.W500,
-                    color = TextPrimary
-                )
-                Text(
-                    "/ $totalTargetSets sets",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.W400,
-                    color = TextSecondary
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    "TOTAL SETS",
-                    fontSize = 10.sp,
-                    color = TextTertiary,
-                    letterSpacing = 0.5.sp
-                )
+        if (onTargetCount > 0) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(OnTargetBg)
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                ) {
+                    Text("$onTargetCount on target", fontSize = 11.sp, color = OnTarget)
+                }
             }
-
-            // Divider
-            Box(
-                modifier = Modifier
-                    .width(0.5.dp)
-                    .height(50.dp)
-                    .background(SurfaceVariant)
-            )
-
-            // Total volume stat
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    String.format("%.0f", totalVolume),
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.W500,
-                    color = TextPrimary
-                )
-                Text(
-                    unit,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.W400,
-                    color = TextSecondary
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    "TOTAL VOLUME",
-                    fontSize = 10.sp,
-                    color = TextTertiary,
-                    letterSpacing = 0.5.sp
-                )
+        }
+        if (underCount > 0) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(UnderTargetBg)
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                ) {
+                    Text("$underCount under", fontSize = 11.sp, color = UnderTarget)
+                }
+            }
+        }
+        if (overCount > 0) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(OverTargetBg)
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                ) {
+                    Text("$overCount over", fontSize = 11.sp, color = OverTarget)
+                }
             }
         }
     }
