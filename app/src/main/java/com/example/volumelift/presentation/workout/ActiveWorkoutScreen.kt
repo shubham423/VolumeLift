@@ -273,32 +273,6 @@ fun ActiveWorkoutScreen(
                         .fillMaxSize()
                         .padding(paddingValues)
                 ) {
-                    // Volume whisper
-                    AnimatedVisibility(
-                        visible = state.volumeWhisper != null,
-                        enter = fadeIn(),
-                        exit = fadeOut()
-                    ) {
-                        state.volumeWhisper?.let { whisper ->
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 4.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(OnTarget.copy(alpha = 0.15f))
-                                    .padding(horizontal = 12.dp, vertical = 6.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    whisper.text,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.W500,
-                                    color = OnTarget
-                                )
-                            }
-                        }
-                    }
-
                     // Rest timer bar
                     if (state.isRestTimerRunning) {
                         RestTimerBar(

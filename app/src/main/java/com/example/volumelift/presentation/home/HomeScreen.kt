@@ -102,7 +102,7 @@ fun HomeScreen(
             is HomeUiState.Success -> {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize().padding(paddingValues),
-                    contentPadding = PaddingValues(top = 12.dp, bottom = 80.dp),
+                    contentPadding = PaddingValues(bottom = 80.dp),
                     verticalArrangement = Arrangement.spacedBy(0.dp)
                 ) {
                     // Header: date overline + greeting

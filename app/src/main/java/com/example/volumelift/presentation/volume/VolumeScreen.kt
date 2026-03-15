@@ -63,7 +63,9 @@ fun VolumeScreen(
         when (val state = uiState) {
             is VolumeUiState.Loading -> {
                 Box(
-                    modifier = Modifier.fillMaxSize().padding(paddingValues),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(color = PrimaryLight)
@@ -71,7 +73,9 @@ fun VolumeScreen(
             }
             is VolumeUiState.Error -> {
                 Box(
-                    modifier = Modifier.fillMaxSize().padding(paddingValues),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(state.message, color = MaterialTheme.colorScheme.error)
@@ -79,8 +83,10 @@ fun VolumeScreen(
             }
             is VolumeUiState.Success -> {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(paddingValues),
-                    contentPadding = PaddingValues(top = 12.dp, bottom = 80.dp)
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentPadding = PaddingValues(bottom = 80.dp)
                 ) {
                     // Title + week nav
                     item {
