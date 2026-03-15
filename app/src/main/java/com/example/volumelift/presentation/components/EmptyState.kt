@@ -13,7 +13,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -23,6 +22,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.volumelift.presentation.theme.Primary
+import com.example.volumelift.presentation.theme.PrimaryContainer
+import com.example.volumelift.presentation.theme.PrimaryLight
+import com.example.volumelift.presentation.theme.TextPrimary
+import com.example.volumelift.presentation.theme.TextSecondary
 
 @Composable
 fun EmptyState(
@@ -42,41 +47,43 @@ fun EmptyState(
     ) {
         Box(
             modifier = Modifier
-                .size(80.dp)
+                .size(72.dp)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                .background(PrimaryContainer),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                modifier = Modifier.size(40.dp),
-                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+                modifier = Modifier.size(32.dp),
+                tint = PrimaryLight.copy(alpha = 0.7f)
             )
         }
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = title,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.W500,
+            color = TextPrimary,
             textAlign = TextAlign.Center
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(6.dp))
         Text(
             text = subtitle,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 12.sp,
+            color = TextSecondary,
             textAlign = TextAlign.Center
         )
         if (actionLabel != null && onAction != null) {
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
             Button(
                 onClick = onAction,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
+                    containerColor = Primary,
+                    contentColor = TextPrimary
                 )
             ) {
-                Text(actionLabel, fontWeight = FontWeight.SemiBold)
+                Text(actionLabel, fontWeight = FontWeight.W500, fontSize = 12.sp)
             }
         }
     }

@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -20,14 +19,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.rounded.FitnessCenter
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Text
@@ -43,12 +41,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.volumelift.data.local.entity.MuscleGroup
 import com.example.volumelift.domain.model.Exercise
 import com.example.volumelift.presentation.exercises.ExerciseLibraryUiState
 import com.example.volumelift.presentation.exercises.ExerciseLibraryViewModel
+import com.example.volumelift.presentation.theme.Background
+import com.example.volumelift.presentation.theme.MuscleSecondaryBg
+import com.example.volumelift.presentation.theme.MuscleSecondaryColor
+import com.example.volumelift.presentation.theme.OverTarget
+import com.example.volumelift.presentation.theme.Primary
+import com.example.volumelift.presentation.theme.PrimaryContainer
+import com.example.volumelift.presentation.theme.PrimaryLight
+import com.example.volumelift.presentation.theme.Surface
+import com.example.volumelift.presentation.theme.TextPrimary
+import com.example.volumelift.presentation.theme.TextSecondary
+import com.example.volumelift.presentation.theme.TextTertiary
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,18 +72,19 @@ fun ExercisePickerScreen(
     var selectedMuscleGroup by remember { mutableStateOf<MuscleGroup?>(null) }
 
     Scaffold(
+        containerColor = Background,
         topBar = {
             TopAppBar(
                 title = {
-                    Text("Add Exercise", fontWeight = FontWeight.Bold)
+                    Text("Add Exercise", fontSize = 18.sp, fontWeight = FontWeight.W500, color = TextPrimary)
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = TextSecondary)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor = Background
                 )
             )
         }
@@ -95,7 +106,7 @@ fun ExercisePickerScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
-                placeholder = { Text("Search exercises...") }
+                placeholder = { Text("Search exercises...", fontSize = 13.sp, color = TextTertiary) }
             ) {}
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -111,7 +122,14 @@ fun ExercisePickerScreen(
                             selectedMuscleGroup = null
                             viewModel.filterByMuscleGroup(null)
                         },
-                        label = { Text("All", fontWeight = FontWeight.Medium) }
+                        label = { Text("All", fontSize = 11.sp) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Primary,
+                            selectedLabelColor = TextPrimary,
+                            containerColor = Surface,
+                            labelColor = TextSecondary
+                        ),
+                        shape = RoundedCornerShape(8.dp)
                     )
                 }
                 items(MuscleGroup.entries.toTypedArray()) { muscleGroup ->
@@ -121,7 +139,14 @@ fun ExercisePickerScreen(
                             selectedMuscleGroup = muscleGroup
                             viewModel.filterByMuscleGroup(muscleGroup)
                         },
-                        label = { Text(muscleGroup.name, fontWeight = FontWeight.Medium) }
+                        label = { Text(muscleGroup.name, fontSize = 11.sp) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Primary,
+                            selectedLabelColor = TextPrimary,
+                            containerColor = Surface,
+                            labelColor = TextSecondary
+                        ),
+                        shape = RoundedCornerShape(8.dp)
                     )
                 }
             }
@@ -135,13 +160,13 @@ fun ExercisePickerScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(state.message, color = MaterialTheme.colorScheme.error)
+                        Text(state.message, color = OverTarget)
                     }
                 }
                 is ExerciseLibraryUiState.Success -> {
                     LazyColumn(
                         contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         items(state.exercises) { exercise ->
                             ExercisePickerItem(
@@ -162,48 +187,44 @@ fun ExercisePickerItem(exercise: Exercise, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        )
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Row(
-            modifier = Modifier.padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Rounded.FitnessCenter,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            Column {
-                Text(
-                    exercise.name,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Row {
+            Text(
+                exercise.name,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.W500,
+                color = TextPrimary
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(PrimaryContainer)
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
                     Text(
                         exercise.primaryMuscleGroup.name,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Medium
+                        fontSize = 9.sp,
+                        color = PrimaryLight
                     )
-                    if (exercise.secondaryMuscleGroups.isNotEmpty()) {
+                }
+                exercise.secondaryMuscleGroups.forEach { mg ->
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(MuscleSecondaryBg)
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
                         Text(
-                            " + ${exercise.secondaryMuscleGroups.joinToString(", ") { it.name }}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            mg.name,
+                            fontSize = 9.sp,
+                            color = MuscleSecondaryColor
                         )
                     }
                 }

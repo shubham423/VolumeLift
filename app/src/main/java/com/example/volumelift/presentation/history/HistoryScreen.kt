@@ -18,12 +18,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.DeleteOutline
-import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -33,19 +30,24 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.volumelift.domain.model.WorkoutSession
 import com.example.volumelift.presentation.components.EmptyState
+import com.example.volumelift.presentation.theme.Background
+import com.example.volumelift.presentation.theme.OverTarget
+import com.example.volumelift.presentation.theme.PrimaryLight
+import com.example.volumelift.presentation.theme.Surface
+import com.example.volumelift.presentation.theme.TextPrimary
+import com.example.volumelift.presentation.theme.TextSecondary
+import com.example.volumelift.presentation.theme.TextTertiary
 import com.example.volumelift.util.DateUtils
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -57,20 +59,7 @@ fun HistoryScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        "History",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Black
-                    )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
-            )
-        }
+        containerColor = Background
     ) { paddingValues ->
         when (val state = uiState) {
             is HistoryUiState.Loading -> {
@@ -78,7 +67,7 @@ fun HistoryScreen(
                     modifier = Modifier.fillMaxSize().padding(paddingValues),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                    CircularProgressIndicator(color = PrimaryLight)
                 }
             }
             is HistoryUiState.Error -> {
@@ -86,7 +75,7 @@ fun HistoryScreen(
                     modifier = Modifier.fillMaxSize().padding(paddingValues),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(state.message, color = MaterialTheme.colorScheme.error)
+                    Text(state.message, color = OverTarget)
                 }
             }
             is HistoryUiState.Success -> {
@@ -100,9 +89,19 @@ fun HistoryScreen(
                 } else {
                     LazyColumn(
                         modifier = Modifier.padding(paddingValues),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
+                        // Title
+                        item {
+                            Text(
+                                "History",
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.W500,
+                                color = TextPrimary,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+                        }
                         items(state.sessions) { session ->
                             HistoryItem(
                                 session = session,
@@ -133,47 +132,32 @@ fun HistoryItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        )
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
-            modifier = Modifier.padding(14.dp),
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Rounded.Schedule,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
-            Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     DateUtils.formatDateTime(session.startTime),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.W500,
+                    color = TextPrimary
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     DateUtils.formatDuration(session.startTime, session.endTime),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    fontSize = 12.sp,
+                    color = TextSecondary
                 )
                 if (session.notes.isNotBlank()) {
                     Text(
                         session.notes,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 11.sp,
+                        color = TextTertiary,
                         maxLines = 1
                     )
                 }
@@ -182,16 +166,16 @@ fun HistoryItem(
                 Icon(
                     Icons.Rounded.ContentCopy,
                     contentDescription = "Duplicate",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
+                    tint = PrimaryLight,
+                    modifier = Modifier.size(18.dp)
                 )
             }
             IconButton(onClick = onDelete) {
                 Icon(
                     Icons.Rounded.DeleteOutline,
                     contentDescription = "Delete",
-                    tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
-                    modifier = Modifier.size(20.dp)
+                    tint = OverTarget.copy(alpha = 0.6f),
+                    modifier = Modifier.size(18.dp)
                 )
             }
         }

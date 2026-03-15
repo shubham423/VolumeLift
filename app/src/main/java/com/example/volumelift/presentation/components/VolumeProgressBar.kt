@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -27,12 +26,16 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.volumelift.domain.model.MuscleVolume
-import com.example.volumelift.presentation.theme.GradientEnd
-import com.example.volumelift.presentation.theme.GradientStart
-import com.example.volumelift.presentation.theme.VolumeOnTarget
-import com.example.volumelift.presentation.theme.VolumeOver
-import com.example.volumelift.presentation.theme.VolumeUnder
+import com.example.volumelift.presentation.theme.OnTarget
+import com.example.volumelift.presentation.theme.OverTarget
+import com.example.volumelift.presentation.theme.Primary
+import com.example.volumelift.presentation.theme.Surface
+import com.example.volumelift.presentation.theme.TextPrimary
+import com.example.volumelift.presentation.theme.TextSecondary
+import com.example.volumelift.presentation.theme.TextTertiary
+import com.example.volumelift.presentation.theme.UnderTarget
 
 @Composable
 fun VolumeProgressBar(
@@ -42,20 +45,21 @@ fun VolumeProgressBar(
 ) {
     val setsProgress = (muscleVolume.setsProgressPercent / 100f).coerceAtMost(1f)
     val statusColor = when {
-        muscleVolume.setsProgressPercent >= 110f -> VolumeOver
-        muscleVolume.setsProgressPercent >= 85f -> VolumeOnTarget
-        else -> VolumeUnder
+        muscleVolume.setsProgressPercent >= 110f -> OverTarget
+        muscleVolume.setsProgressPercent >= 85f -> OnTarget
+        else -> UnderTarget
     }
 
+    // Gradient per design tokens
     val progressBrush = when {
         muscleVolume.setsProgressPercent >= 110f -> Brush.horizontalGradient(
-            listOf(VolumeOver.copy(alpha = 0.8f), VolumeOver)
+            listOf(Color(0xFFA33030), OverTarget)
         )
         muscleVolume.setsProgressPercent >= 85f -> Brush.horizontalGradient(
-            listOf(GradientEnd, VolumeOnTarget)
+            listOf(Primary, OnTarget)
         )
         else -> Brush.horizontalGradient(
-            listOf(VolumeUnder.copy(alpha = 0.7f), VolumeUnder)
+            listOf(Color(0xFF8A6520), UnderTarget)
         )
     }
 
@@ -69,48 +73,40 @@ fun VolumeProgressBar(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-            .padding(14.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(Surface)
+            .padding(horizontal = 14.dp, vertical = 12.dp)
     ) {
+        // Row 1: Muscle name ... Volume value + arrow
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(statusColor)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = muscleVolume.muscleGroup.name,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
+            Text(
+                text = muscleVolume.muscleGroup.name,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.W500,
+                color = TextPrimary
+            )
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = "${muscleVolume.currentSets}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.W500,
                     color = statusColor
                 )
                 Text(
                     text = " / ${muscleVolume.targetSets}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    fontSize = 12.sp,
+                    color = TextSecondary
                 )
                 if (setsChangeText.isNotEmpty()) {
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = setsChangeText,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = if (muscleVolume.setsWeekOverWeekChange >= 0) VolumeOnTarget else VolumeOver
+                        fontSize = 10.sp,
+                        color = statusColor
                     )
                 }
             }
@@ -118,12 +114,13 @@ fun VolumeProgressBar(
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        // Row 2: Progress bar — 8dp height per design tokens
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(8.dp)
                 .clip(RoundedCornerShape(4.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .background(Surface)
         ) {
             Box(
                 modifier = Modifier
@@ -140,13 +137,24 @@ fun VolumeProgressBar(
             )
         }
 
-        if (muscleVolume.currentVolume > 0) {
+        // Row 3: Target label ... Percentage
+        if (muscleVolume.currentVolume > 0 || muscleVolume.targetSets > 0) {
             Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "${String.format("%.0f", muscleVolume.currentVolume)} $unit",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "${String.format("%.0f", muscleVolume.currentVolume)} $unit",
+                    fontSize = 9.sp,
+                    color = TextTertiary
+                )
+                Text(
+                    text = "${String.format("%.0f", muscleVolume.setsProgressPercent)}%",
+                    fontSize = 9.sp,
+                    color = TextTertiary
+                )
+            }
         }
     }
 }

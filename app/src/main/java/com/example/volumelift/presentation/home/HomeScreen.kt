@@ -18,18 +18,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.FitnessCenter
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Schedule
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -41,8 +37,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -51,15 +45,23 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.volumelift.domain.model.WorkoutSession
 import com.example.volumelift.domain.model.WorkoutTemplate
 import com.example.volumelift.presentation.components.EmptyState
-import com.example.volumelift.presentation.theme.GradientEnd
-import com.example.volumelift.presentation.theme.GradientMid
-import com.example.volumelift.presentation.theme.GradientStart
+import com.example.volumelift.presentation.theme.Background
+import com.example.volumelift.presentation.theme.Primary
+import com.example.volumelift.presentation.theme.PrimaryContainer
+import com.example.volumelift.presentation.theme.PrimaryDark
+import com.example.volumelift.presentation.theme.PrimaryLight
+import com.example.volumelift.presentation.theme.Surface
+import com.example.volumelift.presentation.theme.TextPrimary
+import com.example.volumelift.presentation.theme.TextSecondary
+import com.example.volumelift.presentation.theme.TextTertiary
 import com.example.volumelift.util.DateUtils
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -73,34 +75,7 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        "VolumeLift",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Black
-                    )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    viewModel.startEmptyWorkout { sessionId ->
-                        onNavigateToWorkout(sessionId)
-                    }
-                },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = Color.White,
-                elevation = FloatingActionButtonDefaults.elevation(8.dp)
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Start workout")
-            }
-        }
+        containerColor = Background
     ) { paddingValues ->
         when (val state = uiState) {
             is HomeUiState.Loading -> {
@@ -108,7 +83,7 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxSize().padding(paddingValues),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                    CircularProgressIndicator(color = PrimaryLight)
                 }
             }
             is HomeUiState.Error -> {
@@ -128,9 +103,21 @@ fun HomeScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues),
-                    contentPadding = PaddingValues(bottom = 80.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    contentPadding = PaddingValues(top = 12.dp, bottom = 80.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
+                    // Greeting header
+                    item {
+                        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                            Text(
+                                "Good morning",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = TextPrimary,
+                                fontWeight = FontWeight.W500
+                            )
+                        }
+                    }
+
                     // Active Session Card
                     if (state.activeSession != null) {
                         item {
@@ -142,14 +129,15 @@ fun HomeScreen(
                         }
                     }
 
-                    // Quick Start
+                    // CTA Card — Start Workout
                     item {
-                        QuickStartButton(
-                            onClick = {
+                        StartWorkoutCTA(
+                            onStartEmpty = {
                                 viewModel.startEmptyWorkout { sessionId ->
                                     onNavigateToWorkout(sessionId)
                                 }
                             },
+                            onFromTemplate = onNavigateToTemplates,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                         )
                     }
@@ -167,7 +155,7 @@ fun HomeScreen(
                         item {
                             LazyRow(
                                 contentPadding = PaddingValues(horizontal = 16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 items(state.templates) { template ->
                                     TemplateCard(
@@ -187,7 +175,7 @@ fun HomeScreen(
                     if (state.recentWorkouts.isNotEmpty()) {
                         item {
                             SectionHeader(
-                                title = "Recent Workouts",
+                                title = "Recent workouts",
                                 actionLabel = "See All",
                                 onAction = onNavigateToHistory,
                                 modifier = Modifier.padding(horizontal = 16.dp)
@@ -239,22 +227,17 @@ private fun SectionHeader(
     ) {
         Text(
             title,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold
+            fontSize = 14.sp,
+            fontWeight = FontWeight.W500,
+            color = TextPrimary
         )
         if (actionLabel != null && onAction != null) {
             TextButton(onClick = onAction) {
                 Text(
                     actionLabel,
-                    color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.labelLarge
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Icon(
-                    Icons.AutoMirrored.Rounded.ArrowForward,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.primary
+                    color = PrimaryLight,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.W400
                 )
             }
         }
@@ -262,63 +245,60 @@ private fun SectionHeader(
 }
 
 @Composable
-private fun QuickStartButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Card(
+private fun StartWorkoutCTA(
+    onStartEmpty: () -> Unit,
+    onFromTemplate: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
         modifier = modifier
             .fillMaxWidth()
-            .clickable { onClick() },
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    brush = Brush.horizontalGradient(
-                        colors = listOf(GradientStart, GradientMid, GradientEnd)
-                    ),
-                    shape = RoundedCornerShape(20.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(
+                brush = Brush.linearGradient(
+                    colors = listOf(Primary, PrimaryDark)
                 )
-                .padding(20.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            )
+            .clickable { onStartEmpty() }
+            .padding(16.dp)
+    ) {
+        Column {
+            Text(
+                "Start workout",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.W500,
+                color = TextPrimary
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // + Empty pill
                 Box(
                     modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.2f)),
-                    contentAlignment = Alignment.Center
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color.White.copy(alpha = 0.15f))
+                        .clickable { onStartEmpty() }
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
                 ) {
-                    Icon(
-                        Icons.Rounded.PlayArrow,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(28.dp)
+                    Text(
+                        "+ Empty",
+                        fontSize = 11.sp,
+                        color = TextPrimary
                     )
                 }
-                Spacer(modifier = Modifier.width(16.dp))
-                Column(modifier = Modifier.weight(1f)) {
+                // From template pill
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color.White.copy(alpha = 0.15f))
+                        .clickable { onFromTemplate() }
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                ) {
                     Text(
-                        "Start Empty Workout",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Text(
-                        "Begin a new training session",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.8f)
+                        "From template",
+                        fontSize = 11.sp,
+                        color = TextPrimary
                     )
                 }
-                Icon(
-                    Icons.AutoMirrored.Rounded.ArrowForward,
-                    contentDescription = null,
-                    tint = Color.White.copy(alpha = 0.7f),
-                    modifier = Modifier.size(20.dp)
-                )
             }
         }
     }
@@ -335,51 +315,49 @@ fun ActiveSessionCard(
             .fillMaxWidth()
             .clickable { onClick() }
             .animateContentSize(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = PrimaryContainer),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary),
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Primary),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     Icons.Rounded.FitnessCenter,
                     contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(22.dp)
+                    tint = TextPrimary,
+                    modifier = Modifier.size(20.dp)
                 )
             }
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     "Active Workout",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.W500,
+                    color = PrimaryLight
                 )
                 Text(
                     "Started ${DateUtils.formatTime(session.startTime)} - Tap to continue",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    fontSize = 12.sp,
+                    color = TextSecondary
                 )
             }
             Icon(
                 Icons.AutoMirrored.Rounded.ArrowForward,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.5f),
-                modifier = Modifier.size(20.dp)
+                tint = TextTertiary,
+                modifier = Modifier.size(16.dp)
             )
         }
     }
@@ -391,47 +369,33 @@ fun TemplateCard(template: WorkoutTemplate, onClick: () -> Unit) {
         modifier = Modifier
             .width(170.dp)
             .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Rounded.FitnessCenter,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-            Spacer(modifier = Modifier.height(10.dp))
+        Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
             Text(
                 template.name,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1
+                fontSize = 14.sp,
+                fontWeight = FontWeight.W500,
+                color = TextPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 "${template.exerciseIds.size} exercises",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                fontSize = 12.sp,
+                color = TextSecondary
             )
             if (template.notes.isNotBlank()) {
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     template.notes,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2
+                    fontSize = 11.sp,
+                    color = TextTertiary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
@@ -442,42 +406,33 @@ fun TemplateCard(template: WorkoutTemplate, onClick: () -> Unit) {
 fun RecentWorkoutCard(session: WorkoutSession, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Card(
         modifier = modifier.fillMaxWidth().clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        )
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
-            modifier = Modifier.padding(14.dp),
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Rounded.Schedule,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-            Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     DateUtils.formatDate(session.startTime),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.W500,
+                    color = TextPrimary
                 )
                 Text(
                     DateUtils.formatDuration(session.startTime, session.endTime),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    fontSize = 12.sp,
+                    color = TextSecondary
                 )
             }
+            Icon(
+                Icons.AutoMirrored.Rounded.ArrowForward,
+                contentDescription = null,
+                tint = TextTertiary,
+                modifier = Modifier.size(16.dp)
+            )
         }
     }
 }

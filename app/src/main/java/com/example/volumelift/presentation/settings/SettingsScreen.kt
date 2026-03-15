@@ -36,8 +36,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,13 +44,22 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.volumelift.domain.model.ThemeMode
+import com.example.volumelift.presentation.theme.Background
+import com.example.volumelift.presentation.theme.Primary
+import com.example.volumelift.presentation.theme.PrimaryContainer
+import com.example.volumelift.presentation.theme.PrimaryLight
+import com.example.volumelift.presentation.theme.Surface
+import com.example.volumelift.presentation.theme.SurfaceVariant
+import com.example.volumelift.presentation.theme.TextPrimary
+import com.example.volumelift.presentation.theme.TextSecondary
+import com.example.volumelift.presentation.theme.TextTertiary
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,27 +71,14 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        "Settings",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Black
-                    )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
-            )
-        }
+        containerColor = Background
     ) { paddingValues ->
         when (val state = uiState) {
             is SettingsUiState.Loading -> {
                 Box(
                     modifier = Modifier.fillMaxSize().padding(paddingValues),
                     contentAlignment = Alignment.Center
-                ) { CircularProgressIndicator(color = MaterialTheme.colorScheme.primary) }
+                ) { CircularProgressIndicator(color = PrimaryLight) }
             }
             is SettingsUiState.Error -> {
                 Box(
@@ -97,9 +91,20 @@ fun SettingsScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
+                    // Title
+                    item {
+                        Text(
+                            "Settings",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.W500,
+                            color = TextPrimary,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                    }
+
                     // General section
                     item {
                         SectionLabel("GENERAL")
@@ -107,10 +112,9 @@ fun SettingsScreen(
 
                     item {
                         Card(
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                            )
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = Surface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                         ) {
                             Column {
                                 // Unit toggle
@@ -123,8 +127,8 @@ fun SettingsScreen(
                                         checked = state.preferences.useKg,
                                         onCheckedChange = { viewModel.toggleUnit() },
                                         colors = SwitchDefaults.colors(
-                                            checkedTrackColor = MaterialTheme.colorScheme.primary,
-                                            checkedThumbColor = Color.White
+                                            checkedTrackColor = Primary,
+                                            checkedThumbColor = TextPrimary
                                         )
                                     )
                                 }
@@ -154,8 +158,8 @@ fun SettingsScreen(
                                         Icon(
                                             Icons.Rounded.ChevronRight,
                                             contentDescription = null,
-                                            modifier = Modifier.size(20.dp),
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                            modifier = Modifier.size(16.dp),
+                                            tint = TextTertiary
                                         )
                                     }
                                 }
@@ -185,8 +189,8 @@ fun SettingsScreen(
                                         Icon(
                                             Icons.Rounded.ChevronRight,
                                             contentDescription = null,
-                                            modifier = Modifier.size(20.dp),
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                            modifier = Modifier.size(16.dp),
+                                            tint = TextTertiary
                                         )
                                     }
                                 }
@@ -201,10 +205,9 @@ fun SettingsScreen(
 
                     item {
                         Card(
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                            )
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = Surface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                         ) {
                             Column {
                                 SettingsRow(
@@ -247,9 +250,10 @@ fun SettingsScreen(
 private fun SectionLabel(text: String) {
     Text(
         text = text,
-        style = MaterialTheme.typography.labelMedium,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.primary,
+        fontSize = 11.sp,
+        fontWeight = FontWeight.W500,
+        color = TextTertiary,
+        letterSpacing = 0.5.sp,
         modifier = Modifier.padding(start = 4.dp, top = 8.dp, bottom = 4.dp)
     )
 }
@@ -261,7 +265,7 @@ private fun SettingsDivider() {
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
             .height(0.5.dp)
-            .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            .background(SurfaceVariant)
     )
 }
 
@@ -278,34 +282,35 @@ fun SettingsRow(
         modifier = Modifier
             .fillMaxWidth()
             .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .size(36.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                .size(32.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(PrimaryContainer),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp)
+                tint = PrimaryLight,
+                modifier = Modifier.size(16.dp)
             )
         }
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 title,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium
+                fontSize = 14.sp,
+                fontWeight = FontWeight.W500,
+                color = TextPrimary
             )
             Text(
                 subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                fontSize = 12.sp,
+                color = TextSecondary
             )
         }
         if (trailing != null) {
@@ -314,8 +319,8 @@ fun SettingsRow(
             Icon(
                 Icons.Rounded.ChevronRight,
                 contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                modifier = Modifier.size(16.dp),
+                tint = TextTertiary
             )
         }
     }

@@ -58,11 +58,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.volumelift.data.local.entity.SetType
@@ -70,9 +70,20 @@ import com.example.volumelift.domain.model.ExerciseLogWithSets
 import com.example.volumelift.domain.model.WorkoutSet
 import com.example.volumelift.presentation.components.RepsPicker
 import com.example.volumelift.presentation.components.WeightPicker
-import com.example.volumelift.presentation.theme.GradientEnd
-import com.example.volumelift.presentation.theme.GradientStart
-import com.example.volumelift.presentation.theme.VolumeOnTarget
+import com.example.volumelift.presentation.theme.Background
+import com.example.volumelift.presentation.theme.Border
+import com.example.volumelift.presentation.theme.OnTarget
+import com.example.volumelift.presentation.theme.OverTarget
+import com.example.volumelift.presentation.theme.Primary
+import com.example.volumelift.presentation.theme.PrimaryLight
+import com.example.volumelift.presentation.theme.RestTimerBg
+import com.example.volumelift.presentation.theme.RestTimerButtonBg
+import com.example.volumelift.presentation.theme.Surface
+import com.example.volumelift.presentation.theme.SurfaceVariant
+import com.example.volumelift.presentation.theme.TextPrimary
+import com.example.volumelift.presentation.theme.TextSecondary
+import com.example.volumelift.presentation.theme.TextTertiary
+import com.example.volumelift.presentation.theme.UnderTarget
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -88,94 +99,102 @@ fun ActiveWorkoutScreen(
     if (showCancelDialog) {
         AlertDialog(
             onDismissRequest = { showCancelDialog = false },
-            title = { Text("Cancel Workout?", fontWeight = FontWeight.Bold) },
+            title = { Text("Cancel Workout?", fontWeight = FontWeight.W500) },
             text = { Text("This will discard all progress for this workout.") },
             confirmButton = {
                 TextButton(onClick = {
                     showCancelDialog = false
                     viewModel.cancelWorkout { onFinish() }
-                }) { Text("Discard", color = MaterialTheme.colorScheme.error) }
+                }) { Text("Discard", color = OverTarget) }
             },
             dismissButton = {
                 TextButton(onClick = { showCancelDialog = false }) { Text("Keep") }
             },
-            shape = RoundedCornerShape(20.dp)
+            containerColor = Surface,
+            shape = RoundedCornerShape(12.dp)
         )
     }
 
     if (showFinishDialog) {
         AlertDialog(
             onDismissRequest = { showFinishDialog = false },
-            title = { Text("Finish Workout?", fontWeight = FontWeight.Bold) },
+            title = { Text("Finish Workout?", fontWeight = FontWeight.W500) },
             text = { Text("Complete this workout and save it to your history.") },
             confirmButton = {
                 TextButton(onClick = {
                     showFinishDialog = false
                     viewModel.completeWorkout { onFinish() }
-                }) { Text("Finish", color = VolumeOnTarget) }
+                }) { Text("Finish", color = OnTarget) }
             },
             dismissButton = {
                 TextButton(onClick = { showFinishDialog = false }) { Text("Cancel") }
             },
-            shape = RoundedCornerShape(20.dp)
+            containerColor = Surface,
+            shape = RoundedCornerShape(12.dp)
         )
     }
 
     when (val state = uiState) {
         is ActiveWorkoutUiState.Loading -> {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            Box(modifier = Modifier.fillMaxSize().background(Background), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = PrimaryLight)
             }
         }
         is ActiveWorkoutUiState.Error -> {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(state.message, color = MaterialTheme.colorScheme.error)
+            Box(modifier = Modifier.fillMaxSize().background(Background), contentAlignment = Alignment.Center) {
+                Text(state.message, color = OverTarget)
             }
         }
         is ActiveWorkoutUiState.Success -> {
             Scaffold(
+                containerColor = Background,
                 topBar = {
                     TopAppBar(
                         title = {
                             Column {
                                 Text(
                                     "Workout",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.W500,
+                                    color = TextPrimary
                                 )
-                                Text(
-                                    state.elapsedTime,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontWeight = FontWeight.SemiBold
-                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    // Pulsing green dot
+                                    Box(
+                                        modifier = Modifier
+                                            .size(6.dp)
+                                            .clip(CircleShape)
+                                            .background(OnTarget)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        state.elapsedTime,
+                                        fontSize = 12.sp,
+                                        color = PrimaryLight,
+                                        fontWeight = FontWeight.W500
+                                    )
+                                }
                             }
                         },
                         navigationIcon = {
                             IconButton(onClick = { showCancelDialog = true }) {
-                                Icon(Icons.Rounded.Close, contentDescription = "Cancel")
+                                Icon(Icons.Rounded.Close, contentDescription = "Cancel", tint = TextSecondary)
                             }
                         },
                         actions = {
                             Button(
                                 onClick = { showFinishDialog = true },
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = VolumeOnTarget,
-                                    contentColor = Color.White
+                                    containerColor = Primary,
+                                    contentColor = TextPrimary
                                 ),
-                                shape = RoundedCornerShape(12.dp)
+                                shape = RoundedCornerShape(10.dp)
                             ) {
-                                Icon(
-                                    Icons.Rounded.Check,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Finish", fontWeight = FontWeight.Bold)
+                                Text("Finish", fontSize = 12.sp, fontWeight = FontWeight.W500)
                             }
                         },
                         colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = MaterialTheme.colorScheme.surface
+                            containerColor = Background
                         )
                     )
                 }
@@ -215,7 +234,7 @@ fun ActiveWorkoutScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(48.dp),
-                                shape = RoundedCornerShape(14.dp),
+                                shape = RoundedCornerShape(10.dp),
                                 border = ButtonDefaults.outlinedButtonBorder(enabled = true)
                             ) {
                                 Icon(
@@ -224,7 +243,7 @@ fun ActiveWorkoutScreen(
                                     modifier = Modifier.size(20.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Add Exercise", fontWeight = FontWeight.SemiBold)
+                                Text("Add Exercise", fontWeight = FontWeight.W500)
                             }
                         }
                     }
@@ -239,15 +258,9 @@ fun RestTimerBar(seconds: Int, onCancel: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(
-                brush = Brush.horizontalGradient(
-                    listOf(
-                        GradientStart.copy(alpha = 0.15f),
-                        GradientEnd.copy(alpha = 0.15f)
-                    )
-                )
-            )
-            .padding(horizontal = 16.dp, vertical = 10.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(RestTimerBg)
+            .padding(horizontal = 14.dp, vertical = 10.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -256,19 +269,33 @@ fun RestTimerBar(seconds: Int, onCancel: () -> Unit) {
             Icon(
                 Icons.Rounded.Timer,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(22.dp)
+                tint = UnderTarget,
+                modifier = Modifier.size(18.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Rest: ${seconds}s",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
+                text = "REST TIMER",
+                fontSize = 10.sp,
+                fontWeight = FontWeight.W500,
+                color = UnderTarget,
+                letterSpacing = 0.5.sp
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = "${seconds}s",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.W500,
+                color = TextPrimary,
                 modifier = Modifier.weight(1f)
             )
-            TextButton(onClick = onCancel) {
-                Text("Skip", fontWeight = FontWeight.SemiBold)
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(RestTimerButtonBg)
+            ) {
+                TextButton(onClick = onCancel) {
+                    Text("Skip", fontSize = 12.sp, color = UnderTarget)
+                }
             }
         }
     }
@@ -285,13 +312,11 @@ fun ExerciseLogCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -299,19 +324,19 @@ fun ExerciseLogCard(
             ) {
                 Text(
                     text = exerciseLog.exerciseName,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.W500,
+                    color = PrimaryLight
                 )
                 IconButton(
                     onClick = onRemoveExercise,
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(28.dp)
                 ) {
                     Icon(
                         Icons.Rounded.DeleteOutline,
                         contentDescription = "Remove exercise",
-                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.6f),
-                        modifier = Modifier.size(18.dp)
+                        tint = OverTarget.copy(alpha = 0.6f),
+                        modifier = Modifier.size(16.dp)
                     )
                 }
             }
@@ -323,15 +348,15 @@ fun ExerciseLogCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                    .background(SurfaceVariant)
                     .padding(horizontal = 4.dp, vertical = 6.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Set", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, modifier = Modifier.width(32.dp), textAlign = TextAlign.Center)
-                Text("Type", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, modifier = Modifier.width(64.dp), textAlign = TextAlign.Center)
-                Text("Weight", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
-                Text("Reps", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
-                Text("", style = MaterialTheme.typography.labelSmall, modifier = Modifier.width(44.dp))
+                Text("Set", fontSize = 10.sp, color = TextTertiary, modifier = Modifier.width(32.dp), textAlign = TextAlign.Center)
+                Text("Type", fontSize = 10.sp, color = TextTertiary, modifier = Modifier.width(64.dp), textAlign = TextAlign.Center)
+                Text("kg", fontSize = 10.sp, color = TextTertiary, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
+                Text("Reps", fontSize = 10.sp, color = TextTertiary, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
+                Text("", fontSize = 10.sp, modifier = Modifier.width(44.dp))
             }
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -346,12 +371,11 @@ fun ExerciseLogCard(
             }
 
             Spacer(modifier = Modifier.height(8.dp))
-            OutlinedButton(
+            TextButton(
                 onClick = onAddSet,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(10.dp)
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text("+ Add Set", fontWeight = FontWeight.Medium)
+                Text("+ Add Set", fontSize = 12.sp, color = PrimaryLight, fontWeight = FontWeight.W500)
             }
         }
     }
@@ -367,7 +391,7 @@ fun SetRow(
     var showTypeMenu by remember { mutableStateOf(false) }
 
     val rowBackground = if (set.isCompleted) {
-        VolumeOnTarget.copy(alpha = 0.08f)
+        OnTarget.copy(alpha = 0.08f)
     } else {
         Color.Transparent
     }
@@ -383,8 +407,8 @@ fun SetRow(
     ) {
         Text(
             "${set.setNumber}",
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.SemiBold,
+            fontSize = 12.sp,
+            color = TextSecondary,
             modifier = Modifier.width(32.dp),
             textAlign = TextAlign.Center
         )
@@ -401,8 +425,8 @@ fun SetRow(
                             SetType.Dropset -> "D"
                             SetType.Failure -> "F"
                         },
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.W500
                     )
                 }
             )
@@ -439,8 +463,9 @@ fun SetRow(
             },
             modifier = Modifier.width(44.dp),
             colors = CheckboxDefaults.colors(
-                checkedColor = VolumeOnTarget,
-                checkmarkColor = Color.White
+                checkedColor = Primary,
+                checkmarkColor = TextPrimary,
+                uncheckedColor = Border
             )
         )
     }

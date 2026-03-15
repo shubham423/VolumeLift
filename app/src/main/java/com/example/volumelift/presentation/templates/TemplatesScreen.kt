@@ -21,13 +21,11 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.rounded.DeleteOutline
-import androidx.compose.material.icons.automirrored.rounded.ViewList
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -44,14 +42,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.volumelift.domain.model.WorkoutTemplate
 import com.example.volumelift.presentation.components.EmptyState
+import com.example.volumelift.presentation.theme.Background
+import com.example.volumelift.presentation.theme.OverTarget
+import com.example.volumelift.presentation.theme.Primary
+import com.example.volumelift.presentation.theme.PrimaryLight
+import com.example.volumelift.presentation.theme.Surface
+import com.example.volumelift.presentation.theme.TextPrimary
+import com.example.volumelift.presentation.theme.TextSecondary
+import com.example.volumelift.presentation.theme.TextTertiary
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,27 +78,28 @@ fun TemplatesScreen(
     }
 
     Scaffold(
+        containerColor = Background,
         topBar = {
             TopAppBar(
                 title = {
-                    Text("Templates", fontWeight = FontWeight.Bold)
+                    Text("Templates", fontSize = 18.sp, fontWeight = FontWeight.W500, color = TextPrimary)
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = TextSecondary)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor = Background
                 )
             )
         },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { showCreateDialog = true },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = Color.White,
-                elevation = FloatingActionButtonDefaults.elevation(8.dp)
+                containerColor = Primary,
+                contentColor = TextPrimary,
+                shape = RoundedCornerShape(14.dp)
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Create template")
             }
@@ -106,7 +112,7 @@ fun TemplatesScreen(
                     modifier = Modifier.fillMaxSize().padding(paddingValues),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(state.message, color = MaterialTheme.colorScheme.error)
+                    Text(state.message, color = OverTarget)
                 }
             }
             is TemplatesUiState.Success -> {
@@ -125,7 +131,7 @@ fun TemplatesScreen(
                             .fillMaxSize()
                             .padding(paddingValues),
                         contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         items(state.templates) { template ->
                             TemplateItem(
@@ -144,54 +150,39 @@ fun TemplatesScreen(
 fun TemplateItem(template: WorkoutTemplate, onDelete: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        )
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
-            modifier = Modifier.padding(14.dp),
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.AutoMirrored.Rounded.ViewList,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-            Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     template.name,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.W500,
+                    color = TextPrimary
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     "${template.exerciseIds.size} exercises",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    fontSize = 12.sp,
+                    color = TextSecondary
                 )
                 if (template.notes.isNotBlank()) {
                     Text(
                         template.notes,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        fontSize = 11.sp,
+                        color = TextTertiary
                     )
                 }
                 if (template.exercises.isNotEmpty()) {
                     Text(
                         template.exercises.joinToString(", ") { it.name },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 11.sp,
+                        color = TextTertiary,
                         maxLines = 2
                     )
                 }
@@ -200,8 +191,8 @@ fun TemplateItem(template: WorkoutTemplate, onDelete: () -> Unit) {
                 Icon(
                     Icons.Rounded.DeleteOutline,
                     contentDescription = "Delete",
-                    tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
-                    modifier = Modifier.size(20.dp)
+                    tint = OverTarget.copy(alpha = 0.6f),
+                    modifier = Modifier.size(18.dp)
                 )
             }
         }
@@ -218,7 +209,7 @@ fun CreateTemplateDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Create Template", fontWeight = FontWeight.Bold) },
+        title = { Text("Create Template", fontWeight = FontWeight.W500, fontSize = 14.sp) },
         text = {
             Column {
                 OutlinedTextField(
@@ -226,7 +217,7 @@ fun CreateTemplateDialog(
                     onValueChange = { name = it },
                     label = { Text("Template Name") },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(8.dp)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
@@ -234,7 +225,7 @@ fun CreateTemplateDialog(
                     onValueChange = { notes = it },
                     label = { Text("Notes (optional)") },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(8.dp)
                 )
             }
         },
@@ -242,11 +233,12 @@ fun CreateTemplateDialog(
             TextButton(
                 onClick = { if (name.isNotBlank()) onCreate(name, notes) },
                 enabled = name.isNotBlank()
-            ) { Text("Create", fontWeight = FontWeight.Bold) }
+            ) { Text("Create", fontWeight = FontWeight.W500, color = PrimaryLight) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            TextButton(onClick = onDismiss) { Text("Cancel", color = TextSecondary) }
         },
-        shape = RoundedCornerShape(20.dp)
+        containerColor = Surface,
+        shape = RoundedCornerShape(12.dp)
     )
 }
