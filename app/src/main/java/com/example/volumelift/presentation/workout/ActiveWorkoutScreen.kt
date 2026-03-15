@@ -3,6 +3,9 @@ package com.example.volumelift.presentation.workout
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -54,8 +57,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -172,7 +180,18 @@ fun ActiveWorkoutScreen(
             }
         }
         is ActiveWorkoutUiState.Success -> {
-            val workoutName = deriveWorkoutName(state)
+            val defaultName = remember { getDefaultWorkoutName() }
+            var workoutName by remember {
+                mutableStateOf(state.session.notes.ifBlank { defaultName })
+            }
+            val focusManager = LocalFocusManager.current
+
+            // Set default name on first load if notes are blank
+            LaunchedEffect(Unit) {
+                if (state.session.notes.isBlank()) {
+                    viewModel.updateNotes(defaultName)
+                }
+            }
 
             Scaffold(
                 containerColor = Background,
@@ -180,11 +199,36 @@ fun ActiveWorkoutScreen(
                     TopAppBar(
                         title = {
                             Column {
-                                Text(
-                                    workoutName,
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.W500,
-                                    color = TextPrimary
+                                BasicTextField(
+                                    value = workoutName,
+                                    onValueChange = { newName ->
+                                        workoutName = newName
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .onFocusChanged { focusState ->
+                                            if (!focusState.isFocused) {
+                                                val name = workoutName.ifBlank { defaultName }
+                                                workoutName = name
+                                                viewModel.updateNotes(name)
+                                            }
+                                        },
+                                    textStyle = TextStyle(
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.W500,
+                                        color = TextPrimary
+                                    ),
+                                    singleLine = true,
+                                    cursorBrush = SolidColor(PrimaryLight),
+                                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                                    keyboardActions = KeyboardActions(
+                                        onDone = {
+                                            val name = workoutName.ifBlank { defaultName }
+                                            workoutName = name
+                                            viewModel.updateNotes(name)
+                                            focusManager.clearFocus()
+                                        }
+                                    )
                                 )
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Box(
@@ -324,14 +368,13 @@ fun ActiveWorkoutScreen(
     }
 }
 
-private fun deriveWorkoutName(state: ActiveWorkoutUiState.Success): String {
-    val session = state.session
-    if (session.notes.isNotBlank()) return session.notes
-    if (state.exerciseLogs.isEmpty()) return "Workout"
-    val firstName = state.exerciseLogs.firstOrNull()?.exerciseName ?: ""
-    val count = state.exerciseLogs.size
-    return if (count <= 1) firstName.ifBlank { "Workout" }
-    else "$firstName + ${count - 1} more"
+private fun getDefaultWorkoutName(): String {
+    val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+    return when {
+        hour < 12 -> "Morning Workout"
+        hour < 17 -> "Afternoon Workout"
+        else -> "Evening Workout"
+    }
 }
 
 @Composable
