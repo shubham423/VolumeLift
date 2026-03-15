@@ -121,6 +121,16 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    fun refresh() {
+        viewModelScope.launch {
+            val activeSession = workoutRepository.getActiveSession()
+            _uiState.update { current ->
+                if (current is HomeUiState.Success) current.copy(activeSession = activeSession)
+                else current
+            }
+        }
+    }
+
     fun startEmptyWorkout(onSessionCreated: (Long) -> Unit) {
         viewModelScope.launch {
             val sessionId = workoutRepository.startSession()
