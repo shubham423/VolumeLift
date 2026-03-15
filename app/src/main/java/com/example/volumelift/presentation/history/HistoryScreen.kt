@@ -200,7 +200,7 @@ private fun WeekSummaryCard(
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     val volText = if (totalVolume >= 1000) {
-                        String.format("%.1fk", totalVolume / 1000)
+                        String.format("%.1f", totalVolume / 1000)
                     } else {
                         String.format("%.0f", totalVolume)
                     }
