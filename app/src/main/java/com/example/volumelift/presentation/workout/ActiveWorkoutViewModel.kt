@@ -303,29 +303,6 @@ class ActiveWorkoutViewModel @Inject constructor(
         }
     }
 
-    fun testFunction() {
-        viewModelScope.launch {
-            launch {
-                println("SHUBHAM 1")
-                launch {
-                    println("SHUBHAM 2")
-                    delay(100)
-                    println("SHUBHAM 3")
-                }
-                launch {
-                    println("SHUBHAM 4")
-                    throw Exception()
-                    println("SHUBHAM 5")
-
-                }
-                println("SHUBHAM 6")
-            }
-            launch {
-                println("SHUBHAM 7")
-            }
-        }
-    }
-
     override fun onCleared() {
         super.onCleared()
         timerJob?.cancel()
