@@ -25,10 +25,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.volumelift.data.local.entity.MuscleGroup
 import com.example.volumelift.domain.model.MuscleVolume
 import com.example.volumelift.presentation.theme.OnTarget
 import com.example.volumelift.presentation.theme.OverTarget
-import com.example.volumelift.presentation.theme.Primary
 import com.example.volumelift.presentation.theme.Surface
 import com.example.volumelift.presentation.theme.TextPrimary
 import com.example.volumelift.presentation.theme.TextSecondary
@@ -49,16 +49,13 @@ fun VolumeProgressBar(
         else -> UnderTarget
     }
 
-    val progressBrush = when {
-        setsProgress >= 110f -> Brush.horizontalGradient(
-            listOf(Color(0xFFA33030), OverTarget)
-        )
-        setsProgress >= 70f -> Brush.horizontalGradient(
-            listOf(Primary, OnTarget)
-        )
-        else -> Brush.horizontalGradient(
-            listOf(Color(0xFF8A6520), UnderTarget)
-        )
+    // Muscle-group-based bar colors
+    val muscleColor = getMuscleBarColor(muscleVolume.muscleGroup)
+    val muscleDarkColor = muscleColor.copy(alpha = 0.5f)
+    val progressBrush = if (setsProgress >= 110f) {
+        Brush.horizontalGradient(listOf(Color(0xFFA33030), OverTarget))
+    } else {
+        Brush.horizontalGradient(listOf(muscleDarkColor, muscleColor))
     }
 
     val unit = if (useKg) "kg" else "lbs"
@@ -156,5 +153,23 @@ fun VolumeProgressBar(
             val percentColor = if (setsProgress > 110f) OverTarget else TextTertiary
             Text(percentText, fontSize = 9.sp, color = percentColor)
         }
+    }
+}
+
+private fun getMuscleBarColor(muscleGroup: MuscleGroup): Color {
+    return when (muscleGroup) {
+        MuscleGroup.Chest -> Color(0xFFE8A94F)       // Amber
+        MuscleGroup.Back -> Color(0xFF6FD4AF)         // Teal
+        MuscleGroup.Shoulders -> Color(0xFFD4A06F)    // Warm tan
+        MuscleGroup.Biceps -> Color(0xFF6FB8D4)       // Sky blue
+        MuscleGroup.Triceps -> Color(0xFFE8C84F)      // Gold
+        MuscleGroup.Quads -> Color(0xFFC490D4)        // Purple
+        MuscleGroup.Hamstrings -> Color(0xFFD47090)   // Rose
+        MuscleGroup.Glutes -> Color(0xFFB490D4)       // Lavender
+        MuscleGroup.Calves -> Color(0xFFD490B4)       // Pink
+        MuscleGroup.Abs -> Color(0xFF90B4D4)          // Steel blue
+        MuscleGroup.Forearms -> Color(0xFF90D4C4)     // Mint
+        MuscleGroup.Traps -> Color(0xFFB4D490)        // Lime
+        MuscleGroup.Lats -> Color(0xFF4FC4A0)         // Emerald
     }
 }
