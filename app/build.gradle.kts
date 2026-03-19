@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.volumelift"
+    namespace = "com.solostackdev.volumelift"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.volumelift"
+        applicationId = "com.solostackdev.volumelift"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
