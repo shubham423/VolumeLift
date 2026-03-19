@@ -68,7 +68,7 @@ The core differentiator. Track training volume per muscle group across the week:
 ## Architecture
 
 ```
-com.example.volumelift/
+com.solostackdev.volumelift/
 ├── di/                     # Hilt modules
 ├── data/
 │   ├── local/
